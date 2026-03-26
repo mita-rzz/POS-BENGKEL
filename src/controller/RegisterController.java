@@ -1,74 +1,112 @@
-package model.register;
+package controller;
 
+import dao.UserDAO;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import javax.swing.*;
-import model.login.AuthService;
-import model.login.LoginController;
-import model.login.LoginView;
+import main.MainFrame;
+import model.User;
+import view.RegisterView;
+
 public class RegisterController {
 
+    // 1. Atribut
     private RegisterView view;
-    private AuthService authService;
+    private UserDAO userDao;
+    private MainFrame mainFrame; // <-- 1. Tambahkan atribut MainFrame
+    
+    private boolean isPasswordVisible = false;
+    private boolean isConfirmPasswordVisible = false;
 
-    public RegisterController(RegisterView view, AuthService authService) {
+    // 2. UBAH Constructor: Tambahkan MainFrame
+    public RegisterController(RegisterView view, MainFrame mainFrame) {
         this.view = view;
-        this.authService = authService;
-        initListeners();
+        this.mainFrame = mainFrame; // <-- Simpan MainFrame
+        this.userDao = new UserDAO(); 
+        initController(); 
     }
 
-    private void initListeners() {
-        // Tombol Register / Daftar
-        view.getBtnRegister().addActionListener(e -> handleRegister());
+    public void initController() {
+        view.getBtnRegister().addActionListener(e -> prosesRegistrasi());
 
-        // Tombol Batal / Kembali ke halaman Login
-        view.getBtnCancel().addActionListener(e -> {
-            view.dispose(); // Tutup halaman register
-            
-            // Buka kembali halaman login
-            LoginView loginView = new LoginView();
-            new LoginController(loginView, authService);
-            loginView.setVisible(true);
-        });
+        view.getBtnTogglePassword().addActionListener(e -> togglePasswordVisibility(false));
+        view.getBtnToggleConfirmPassword().addActionListener(e -> togglePasswordVisibility(true));
 
-        // Checkbox Show Password
-        view.getChkShowPassword().addActionListener(e -> {
-            boolean show = view.getChkShowPassword().isSelected();
-            view.getTxtPassword().setEchoChar(show ? '\0' : '•');
+        view.getLblLogin().addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                kembaliKeLogin();
+            }
         });
     }
 
-    private void handleRegister() {
-        // 1. Ambil data dari View
+    public void togglePasswordVisibility(boolean isConfirmField) {
+        if (isConfirmField) {
+            isConfirmPasswordVisible = !isConfirmPasswordVisible;
+            if (isConfirmPasswordVisible) {
+                view.getTxtConfirmPassword().setEchoChar((char) 0); 
+                view.getBtnToggleConfirmPassword().setText("O"); 
+            } else {
+                view.getTxtConfirmPassword().setEchoChar('•'); 
+                view.getBtnToggleConfirmPassword().setText("👁"); 
+            }
+        } else {
+            isPasswordVisible = !isPasswordVisible;
+            if (isPasswordVisible) {
+                view.getTxtPassword().setEchoChar((char) 0);
+                view.getBtnTogglePassword().setText("O"); 
+            } else {
+                view.getTxtPassword().setEchoChar('•');
+                view.getBtnTogglePassword().setText("👁"); 
+            }
+        }
+    }
+
+    public void prosesRegistrasi() {
+        String namaLengkap = view.getNamaLengkap();
         String username = view.getUsername();
         String password = view.getPassword();
-        String namaPanjang = view.getNamaPanjang();
+        String confirmPassword = view.getConfirmPassword();
 
-        // 2. Validasi: Pastikan tidak ada kolom yang kosong
-        if (username.isEmpty() || password.isEmpty() || namaPanjang.isEmpty()) {
-            view.setStatus("Semua kolom wajib diisi!", true);
+        if (namaLengkap.isEmpty() || username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+            JOptionPane.showMessageDialog(view, "Semua kolom harus diisi!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            return; 
+        }
+
+        if (!password.equals(confirmPassword)) {
+            JOptionPane.showMessageDialog(view, "Password dan Konfirmasi Password tidak cocok!", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // 3. Proses pendaftaran ke Database lewat AuthService
-        // Pastikan AuthService memiliki method register(username, password, namaPanjang)
-        if (authService.register(username, password, namaPanjang)) {
-            view.setStatus("Registrasi berhasil!", false);
-
-            JOptionPane.showMessageDialog(view,
-                "Akun " + namaPanjang + " berhasil dibuat!\nSilakan login.",
-                "Registrasi Sukses",
-                JOptionPane.INFORMATION_MESSAGE);
-
-            view.dispose(); // Tutup form registrasi setelah sukses
-
-            // Buka halaman Login agar user bisa langsung masuk
-            LoginView loginView = new LoginView();
-            new LoginController(loginView, authService);
-            loginView.setVisible(true);
-            
-        } else {
-            // Jika gagal (biasanya karena username sudah dipakai di database)
-            view.setStatus("Registrasi gagal! Username mungkin sudah terpakai.", true);
-            view.clearFields();
+        if (userDao.cekUsernameAda(username)) {
+            JOptionPane.showMessageDialog(view, "Username sudah terdaftar! Silakan gunakan username lain.", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            return;
         }
+
+        User userBaru = new User();
+        userBaru.setNamaLengkap(namaLengkap);
+        userBaru.setUsername(username);
+        userBaru.setPassword(password);
+
+        userDao.tambahUser(userBaru);
+
+        JOptionPane.showMessageDialog(view, "Registrasi Berhasil! Silakan Login.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+        
+        bersihkanForm();
+        kembaliKeLogin();
+    }
+
+    // 6. PERBAIKI Method ini: Cukup panggil MainFrame untuk ganti kartu
+    public void kembaliKeLogin() {
+        // Hapus kode jendela lama, ganti dengan ini:
+        mainFrame.tampilkanHalaman("HALAMAN_LOGIN");
+        bersihkanForm(); // Opsional: bersihkan inputan register saat batal
+    }
+
+    public void bersihkanForm() {
+        view.getTxtNamaLengkap().setText("");
+        view.getTxtUsername().setText("");
+        view.getTxtPassword().setText("");
+        view.getTxtConfirmPassword().setText("");
     }
 }

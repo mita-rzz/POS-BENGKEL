@@ -1,75 +1,107 @@
-package model.login;
-import javax.swing.*;
+package controller;
+import main.MainFrame;
+import dao.UserDAO;
+import model.User;
+import view.LoginView;
+import view.RegisterView;
+import javax.swing.JOptionPane;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class LoginController {
 
+    // ATRIBUT
     private LoginView view;
-    private AuthService authService;
+    private UserDAO userDao;
+    private MainFrame mainFrame; // <-- 1. Tambahkan atribut MainFrame
+    private boolean isPasswordVisible = false; 
 
-    public LoginController(LoginView view, AuthService authService) {
+    // 2. UBAH CONSTRUCTOR: Terima MainFrame sebagai parameter
+    public LoginController(LoginView view, MainFrame mainFrame) {
         this.view = view;
-        this.authService = authService;
-        initListeners();
+        this.mainFrame = mainFrame; // <-- Simpan MainFrame
+        this.userDao = new UserDAO(); 
+        initController(); 
     }
 
-    private void initListeners() {
-        // Tombol Login
-        view.getBtnLogin().addActionListener(e -> handleLogin());
-
-        // Tombol Cancel
-        view.getBtnCancel().addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(view,
-                "Yakin ingin keluar?", "Konfirmasi",
-                JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) System.exit(0);
+    public void initController() {
+        view.getBtnLogin().addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                prosesLogin();
+            }
         });
 
-        // Checkbox Show Password
-        view.getChkShowPassword().addActionListener(e -> {
-            boolean show = view.getChkShowPassword().isSelected();
-            view.getTxtPassword().setEchoChar(show ? '\0' : '•');
+        view.getBtnTogglePassword().addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                togglePasswordVisibility();
+            }
+        });
+
+        view.getLblSignUp().addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                bukaHalamanRegister();
+            }
         });
     }
 
-    private void handleLogin() {
+    public void togglePasswordVisibility() {
+        if (isPasswordVisible) {
+            view.getTxtPassword().setEchoChar('\u2022');
+            isPasswordVisible = false;
+        } else {
+            view.getTxtPassword().setEchoChar((char) 0);
+            isPasswordVisible = true;
+        }
+    }
+
+    public void prosesLogin() {
         String username = view.getUsername();
         String password = view.getPassword();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            view.setStatus("Username dan password wajib diisi! ", true);
+        if (username.trim().isEmpty() || password.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(view, 
+                "Username dan Password tidak boleh kosong!", 
+                "Peringatan", 
+                JOptionPane.WARNING_MESSAGE);
             return;
         }
-        view.setStatus("Login berhasilLLLLL!", false);
-        // Proses autentikasi
-        if (authService.login(username, password)) {
-            //DIBAWAH INI SEMENTARA ERRROR
-            view.setStatus("Login berhasilLLLLL!", false);
-            User user = authService.getLoggedInUser();
-            view.setStatus("Login berhasil!", false);
 
-            JOptionPane.showMessageDialog(view,
-                "Selamat datang, " + user.getUsername() +
-                "!\nRole: " + user.getRole(),
-                "Login Berhasil",
+        User user = userDao.autentikasiUser(username, password);
+
+        if (user != null) {
+            JOptionPane.showMessageDialog(view, 
+                "Welcome back, " + user.getNamaLengkap() + "!", 
+                "Login Sukses", 
                 JOptionPane.INFORMATION_MESSAGE);
-
-            view.dispose();
-            // Buka halaman utama sesuai role
-            openMainForm(user);
+            
+            // PENTING: view.dispose() DIHAPUS karena ini JPanel.
+            // Nantinya di sini kamu memanggil: mainFrame.tampilkanHalaman("HALAMAN_DASHBOARD");
+            bersihkanForm();
+            
         } else {
-            view.setStatus("Username atau password salah!", true);
-            view.clearFields();
+            JOptionPane.showMessageDialog(view, 
+                "Username atau Password salah!", 
+                "Login Gagal", 
+                JOptionPane.ERROR_MESSAGE);
+                
+            bersihkanForm(); 
         }
     }
 
-    private void openMainForm(User user) {
-        // Contoh navigasi berdasarkan role
-        if ("ADMIN".equals(user.getRole())) {
-            JOptionPane.showMessageDialog(null, "Membuka halaman Admin...");
-            // new AdminForm(user).setVisible(true);
-        } else {
-            JOptionPane.showMessageDialog(null, "Membuka halaman User...");
-            // new UserForm(user).setVisible(true);
-        }
+    // 3. PERBAIKI METHOD INI: Cukup suruh MainFrame ganti kartu!
+    public void bukaHalamanRegister() {
+        mainFrame.tampilkanHalaman("HALAMAN_REGISTER");
+        bersihkanForm(); // Opsional: bersihkan inputan login saat ditinggal
+    }
+
+    public void bersihkanForm() {
+        view.getTxtUsername().setText("");
+        view.getTxtPassword().setText("");
+        view.getTxtUsername().requestFocus(); 
     }
 }

@@ -28,21 +28,21 @@ CREATE TABLE tb_sparepart (
     stok INT NOT NULL DEFAULT 0
 );
 
--- Membuat tabel tipe motor
-CREATE TABLE tb_tipe_motor (
-    id_tipe_motor INT AUTO_INCREMENT PRIMARY KEY,
-    merek VARCHAR(50) NOT NULL,
-    nama_model VARCHAR(100) NOT NULL
-);
+-- -- Membuat tabel tipe motor tabel tipe motor sementara dihilangkan mungkin ada di next update
+-- CREATE TABLE tb_tipe_motor (
+--     id_tipe_motor INT AUTO_INCREMENT PRIMARY KEY,
+--     merek VARCHAR(50) NOT NULL,
+--     nama_model VARCHAR(100) NOT NULL
+-- );
 
 
--- Membuat tabel Transaksi
+-- Membuat tabel Transaksimerek
 CREATE TABLE tb_transaksi (
     id_transaksi      INT PRIMARY KEY AUTO_INCREMENT,
     id_user           INT,
     nama_pelanggan    VARCHAR(100),
-    waktu_transaksi   DATETIME,        
-    total_bayar       DECIMAL(10, 2),
+    waktu_transaksi   DATETIME,       
+    total_bayar       INT,
     status_pembayaran VARCHAR(50),
     nomor_kendaraan   VARCHAR(20),
 
@@ -66,7 +66,7 @@ CREATE TABLE tb_restock (
     id_user        INT,
     nama_supplier  VARCHAR(100),
     waktu_restock  DATETIME,
-    total_biaya    DECIMAL(10, 2),
+    total_biaya   INT,
 
     FOREIGN KEY (id_user) REFERENCES tb_user(id_user)
 );
@@ -92,8 +92,8 @@ CREATE TABLE detail_transaksi_sparepart (
     id_transaksi  INT,
     id_sparepart  INT,
     jumlah        INT,
-    harga_jual    DECIMAL(10, 2),
-    subtotal      DECIMAL(10, 2),
+    harga_jual    INT,
+    subtotal      INT,
 
     FOREIGN KEY (id_transaksi) REFERENCES tb_transaksi(id_transaksi),
     FOREIGN KEY (id_sparepart) REFERENCES tb_sparepart(id_sparepart)

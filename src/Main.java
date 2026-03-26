@@ -1,27 +1,31 @@
 import com.formdev.flatlaf.FlatLightLaf;
+
+import controller.LoginController;
+import controller.RegisterController;
+import main.MainFrame;
+
 import javax.swing.*;
-import model.login.AuthService;
-import model.login.LoginView;
-import model.login.LoginController;
+
+import view.LoginView;
+import view.RegisterView;
 
 public class Main {
     public static void main(String[] args) {
-        try {
-            FlatLightLaf.setup();
-            System.out.println("FlatLaf berhasil dimuat!"); // ← di sini
-        } catch (Exception e) {
-            System.out.println("FlatLaf GAGAL: " + e.getMessage()); // ← di sini
-            e.printStackTrace();
-        }
+        // 1. Buat Jendela Utama (MainFrame) yang bertindak sebagai "Meja"
+        MainFrame mainFrame = new MainFrame();
+        LoginView loginView = new LoginView();
+        RegisterView registerView = new RegisterView();
+        mainFrame.tambahHalaman(loginView, "HALAMAN_LOGIN");
+        mainFrame.tambahHalaman(registerView, "HALAMAN_REGISTER");
 
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                AuthService authService = new AuthService();
-                LoginView view = new LoginView();
-                new LoginController(view, authService);
-                view.setVisible(true);
-            }
-        });
+
+        LoginController loginController = new LoginController(loginView, mainFrame);
+
+        RegisterController registerController = new RegisterController(registerView, mainFrame);
+
+        mainFrame.tampilkanHalaman("HALAMAN_LOGIN");
+        
+
+        mainFrame.setVisible(true);
     }
 }

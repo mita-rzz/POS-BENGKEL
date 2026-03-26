@@ -3,6 +3,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "MainTesting",
+            "request": "launch",
+            "mainClass": "MainTesting",
+            "projectName": "POS-BENGKEL_71d6106c"
+        },
+        {
+            "type": "java",
             "name": "DatabaseConnection",
             "request": "launch",
             "mainClass": "database.DatabaseConnection",
