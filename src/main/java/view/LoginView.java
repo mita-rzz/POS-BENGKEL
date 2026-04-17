@@ -1,7 +1,22 @@
 package view;
 
-import java.awt.*;
-import javax.swing.*;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagLayout;
+import java.awt.RenderingHints;
+
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
 public class LoginView extends JPanel {
@@ -13,145 +28,197 @@ public class LoginView extends JPanel {
     private JButton btnTogglePassword;
     private JLabel lblSignUp;
 
+    // Palet warna mengacu pada Login.tsx & theme.css
+    private static final Color BG_PAGE      = new Color(0xF8, 0xF9, 0xFA); // bg-[#F8F9FA]
+    private static final Color BG_CARD      = Color.WHITE;                  // card: #ffffff
+    private static final Color BG_INPUT     = new Color(0xF3, 0xF3, 0xF5); // input-background: #f3f3f5
+    private static final Color BORDER_COLOR = new Color(0, 0, 0, 26);      // border: rgba(0,0,0,0.1)
+    private static final Color COLOR_FG     = new Color(0x03, 0x02, 0x13); // foreground: #030213
+    private static final Color COLOR_MUTED  = new Color(0x71, 0x71, 0x82); // muted-foreground: #717182
+    private static final Color COLOR_BLUE   = new Color(0x3A, 0xB0, 0xFF); // bg-[#3AB0FF]
+    private static final Color COLOR_BLUE_H = new Color(0x2A, 0x9F, 0xEF); // hover: bg-[#2A9FEF]
+    private static final Color BG_INFO      = new Color(0xEF, 0xF6, 0xFF); // bg-blue-50
+    private static final Color BORDER_INFO  = new Color(0xBF, 0xDB, 0xFE); // border-blue-200
+
     public LoginView() {
-        // Pengaturan dasar Jendela (Frame)
-        setBackground(new Color(14, 15, 19));
-        // Warna Background Utama (Hitam pekat/Navy sangat gelap)
-      
-        setLayout(new GridBagLayout()); // <-- BARIS INI DITAMBAHKAN
-        // Membuat Custom Panel Form agar sudutnya melengkung
-        JPanel formPanel = new JPanel() {
+        setBackground(BG_PAGE);
+        setLayout(new GridBagLayout()); // tengah layar
+
+        // ── Card Panel (rounded) ──────────────────────────────────────────────
+        JPanel card = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                
-                // Mengaktifkan Antialiasing agar lengkungan tidak bergerigi (smooth)
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                // Mewarnai background panel dengan sudut melengkung
-                g2d.setColor(getBackground());
-                // Angka 20, 20 di belakang adalah tingkat kelengkungan sudut (radius)
-                g2d.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                                    RenderingHints.VALUE_ANTIALIAS_ON);
+                // Shadow tipis
+                g2.setColor(new Color(0, 0, 0, 18));
+                g2.fillRoundRect(3, 4, getWidth() - 4, getHeight() - 4, 16, 16);
+                // Background card
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+                // Border tipis
+                g2.setColor(BORDER_COLOR);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+                g2.dispose();
             }
         };
-        
-        formPanel.setPreferredSize(new Dimension(400, 480));
-        formPanel.setBackground(new Color(26, 27, 36)); // Warna Kotak Form (Dark Navy)
-        
-        // PENTING: Membuat background panel transparan agar lengkungan terlihat
-        formPanel.setOpaque(false); 
-        formPanel.setLayout(null); // Menggunakan koordinat absolute (X, Y) agar presisi
+        card.setPreferredSize(new Dimension(420, 510));
+        card.setBackground(BG_CARD);
+        card.setOpaque(false);
+        card.setLayout(null);
 
-        // Label "Welcome back!"
-        JLabel lblTitle = new JLabel("Welcome back!", SwingConstants.CENTER);
-        lblTitle.setForeground(Color.WHITE);
+        // ── Header ────────────────────────────────────────────────────────────
+        JLabel lblTitle = new JLabel("Selamat Datang", SwingConstants.CENTER);
+        lblTitle.setForeground(COLOR_FG);
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 26));
-        lblTitle.setBounds(0, 40, 400, 40);
-        formPanel.add(lblTitle);
+        lblTitle.setBounds(0, 38, 420, 36);
+        card.add(lblTitle);
 
-        // Label Subtitle
-        JLabel lblSubtitle = new JLabel("Please sign in to access your account", SwingConstants.CENTER);
-        lblSubtitle.setForeground(new Color(150, 150, 150));
-        lblSubtitle.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblSubtitle.setBounds(0, 80, 400, 20);
-        formPanel.add(lblSubtitle);
+        JLabel lblSubtitle = new JLabel("Masuk ke akun Anda untuk melanjutkan", SwingConstants.CENTER);
+        lblSubtitle.setForeground(COLOR_MUTED);
+        lblSubtitle.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblSubtitle.setBounds(0, 76, 420, 20);
+        card.add(lblSubtitle);
 
-        // Label Username
+        // ── Label Username ────────────────────────────────────────────────────
         JLabel lblUsername = new JLabel("Username");
-        lblUsername.setForeground(Color.WHITE);
-        lblUsername.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        lblUsername.setBounds(40, 130, 320, 20);
-        formPanel.add(lblUsername);
+        lblUsername.setForeground(COLOR_FG);
+        lblUsername.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblUsername.setBounds(36, 120, 348, 20);
+        card.add(lblUsername);
 
-        // TextField Username
-        txtUsername = new JTextField(); 
-        txtUsername.setBounds(40, 155, 320, 40);
-        txtUsername.setBackground(new Color(20, 21, 28)); 
-        txtUsername.setForeground(new Color(255, 255, 255)); // Warna teks agak pudar
-        txtUsername.setCaretColor(Color.WHITE); // Warna kursor
-        txtUsername.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(new Color(40, 41, 55), 1, true),
-            BorderFactory.createEmptyBorder(0, 10, 0, 10) // Memberi jarak teks dari pinggir
+        // ── Input Username ────────────────────────────────────────────────────
+        txtUsername = new JTextField();
+        txtUsername.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtUsername.setForeground(COLOR_FG);
+        txtUsername.setBackground(BG_INPUT);
+        txtUsername.setCaretColor(COLOR_FG);
+        txtUsername.setBorder(new CompoundBorder(
+            new LineBorder(BORDER_COLOR, 1, true),
+            new EmptyBorder(0, 10, 0, 10)
         ));
-        formPanel.add(txtUsername);
 
-        // Label Password
+        // Placeholder behavior
+        txtUsername.setText("Masukkan username");
+        txtUsername.setForeground(COLOR_MUTED);
+        txtUsername.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override public void focusGained(java.awt.event.FocusEvent e) {
+                if (txtUsername.getText().equals("Masukkan username")) {
+                    txtUsername.setText("");
+                    txtUsername.setForeground(COLOR_FG);
+                }
+            }
+            @Override public void focusLost(java.awt.event.FocusEvent e) {
+                if (txtUsername.getText().isEmpty()) {
+                    txtUsername.setText("Masukkan username");
+                    txtUsername.setForeground(COLOR_MUTED);
+                }
+            }
+        });
+
+        txtUsername.setBounds(36, 144, 348, 40);
+        card.add(txtUsername);
+
+        // ── Label Password ────────────────────────────────────────────────────
         JLabel lblPasswordText = new JLabel("Password");
-        lblPasswordText.setForeground(Color.WHITE);
-        lblPasswordText.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        lblPasswordText.setBounds(40, 215, 320, 20);
-        formPanel.add(lblPasswordText);
-
-        // TextField Password
-        txtPassword = new JPasswordField();
-        txtPassword.setBounds(40, 240, 280, 40); // Lebar dikurangi untuk ruang tombol mata
-        txtPassword.setBackground(new Color(20, 21, 28));
-        txtPassword.setForeground(Color.WHITE);
-        txtPassword.setCaretColor(Color.WHITE);
-        txtPassword.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(new Color(40, 41, 55), 1, true),
-            BorderFactory.createEmptyBorder(0, 10, 0, 10)
-        ));
-        formPanel.add(txtPassword);
-
-        // Tombol Toggle Password (Icon Mata)
-        btnTogglePassword = new JButton("👁"); 
-        btnTogglePassword.setBounds(320, 240, 40, 40);
-        btnTogglePassword.setBackground(new Color(20, 21, 28));
-        btnTogglePassword.setForeground(new Color(150, 150, 150));
-        btnTogglePassword.setBorder(new LineBorder(new Color(40, 41, 55), 1, true));
+        lblPasswordText.setForeground(COLOR_FG);
+        lblPasswordText.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblPasswordText.setBounds(36, 200, 348, 20);
+        card.add(lblPasswordText);
+        
+         // ── Toggle Password Button (icon mata) ────────────────────────────────
+        btnTogglePassword = new JButton("👁");
+        btnTogglePassword.setBounds(348, 224, 36, 40);
+        btnTogglePassword.setBackground(BG_INPUT);
+        btnTogglePassword.setForeground(COLOR_MUTED);
+        btnTogglePassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        btnTogglePassword.setBorder(new LineBorder(BORDER_COLOR, 1, true));
         btnTogglePassword.setFocusPainted(false);
         btnTogglePassword.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        formPanel.add(btnTogglePassword);
+        btnTogglePassword.setContentAreaFilled(true);
+        card.add(btnTogglePassword);
 
-        // Tombol Login (Dibuat melengkung juga jika ingin, tapi di sini saya biarkan sesuai kodemu)
-        btnLogin = new JButton("Login");
-        btnLogin.setBounds(40, 320, 320, 45);
-        btnLogin.setBackground(new Color(50, 51, 68)); 
+        // ── Input Password ────────────────────────────────────────────────────
+        txtPassword = new JPasswordField();
+        txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtPassword.setForeground(COLOR_FG);
+        txtPassword.setBackground(BG_INPUT);
+        txtPassword.setCaretColor(COLOR_FG);
+        txtPassword.setBorder(new CompoundBorder(
+            new LineBorder(BORDER_COLOR, 1, true),
+            new EmptyBorder(0, 10, 0, 10)
+        ));
+        txtPassword.setBounds(36, 224, 308, 40);
+        card.add(txtPassword);
+
+       
+
+        // ── Tombol Login ──────────────────────────────────────────────────────
+        btnLogin = new JButton("Login") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                                    RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getModel().isRollover() ? COLOR_BLUE_H : COLOR_BLUE);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btnLogin.setBounds(36, 296, 348, 42);
         btnLogin.setForeground(Color.WHITE);
         btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnLogin.setBorder(BorderFactory.createEmptyBorder()); // Hilangkan border bawaan
+        btnLogin.setBorderPainted(false);
+        btnLogin.setContentAreaFilled(false);
         btnLogin.setFocusPainted(false);
         btnLogin.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        formPanel.add(btnLogin);
+        btnLogin.setOpaque(false);
+        card.add(btnLogin);
 
-        // Label "Don't have an account ?"
-        JLabel lblDontHave = new JLabel("Don't have an account ?"); 
-        lblDontHave.setForeground(Color.WHITE);
-        lblDontHave.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        lblDontHave.setBounds(95, 390, 150, 20);
-        formPanel.add(lblDontHave);
+        // ── "Belum punya akun?" + Sign Up ─────────────────────────────────────
+        JLabel lblDontHave = new JLabel("Belum punya akun?");
+        lblDontHave.setForeground(new Color(0x47, 0x47, 0x6E)); // slate-600 approx
+        lblDontHave.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblDontHave.setBounds(102, 356, 130, 20);
+        card.add(lblDontHave);
 
-        // Label "Sign up" (Bisa diklik)
-        lblSignUp = new JLabel("Sign up");
-        lblSignUp.setForeground(new Color(255, 60, 90)); 
-        lblSignUp.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        lblSignUp.setBounds(245, 390, 100, 20);
+        lblSignUp = new JLabel("Sign Up");
+        lblSignUp.setForeground(COLOR_BLUE);
+        lblSignUp.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblSignUp.setBounds(236, 356, 80, 20);
         lblSignUp.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        formPanel.add(lblSignUp);
+        card.add(lblSignUp);
 
-        // Memasukkan panel form ke dalam frame utama
-        add(formPanel);
+        // ── Info Demo Box ─────────────────────────────────────────────────────
+        
+
+        
+
+       
+
+        // ── Masukkan card ke panel utama ──────────────────────────────────────
+        add(card);
     }
 
-    // ==========================================
-    // BAGIAN GETTER (WAJIB ADA UNTUK CONTROLLER)
-    // ==========================================
+    // =============================================
+    // GETTER (untuk Controller)
+    // =============================================
 
     public String getUsername() {
-        String user = txtUsername.getText();
-        if (user.equals("Enter your username or email")) return "";
-        return user;
+        String val = txtUsername.getText();
+        if (val.equals("Masukkan username")) return "";
+        return val;
     }
 
     public String getPassword() {
         return new String(txtPassword.getPassword());
     }
 
-    public JButton getBtnLogin() { return btnLogin; }
+    public JButton getBtnLogin()          { return btnLogin; }
     public JButton getBtnTogglePassword() { return btnTogglePassword; }
-    public JLabel getLblSignUp() { return lblSignUp; }
-    public JTextField getTxtUsername() { return txtUsername; }
-    public JPasswordField getTxtPassword() { return txtPassword; }
+    public JLabel  getLblSignUp()         { return lblSignUp; }
+    public JTextField  getTxtUsername()   { return txtUsername; }
+    public JPasswordField getTxtPassword(){ return txtPassword; }
 }
