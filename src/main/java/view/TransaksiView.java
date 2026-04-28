@@ -7,7 +7,11 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.RenderingHints;
 import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.function.Consumer;
@@ -25,7 +29,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentListener;
 
 public class TransaksiView extends JPanel {
@@ -49,7 +52,7 @@ public class TransaksiView extends JPanel {
     private JPanel pnlDaftarItem; 
     private JScrollPane scrollDaftarItem; 
     
-    // Fitur Pembayaran Baru (Sesuai React)
+    // Fitur Pembayaran Baru
     private JComboBox<String> cmbMetodePembayaran;
     private JTextField txtJumlahBayar;
     private JLabel lblKembalian;
@@ -64,6 +67,7 @@ public class TransaksiView extends JPanel {
     private final Color COLOR_TEXT_LABEL = new Color(71, 85, 105);    // slate-600
     private final Color COLOR_PRIMARY = new Color(58, 176, 255);      // #3AB0FF
     private final Color COLOR_DANGER = new Color(239, 68, 68);        // red-500
+    private final Color COLOR_INPUT_BG = new Color(241, 245, 249);    // slate-100 (Warna dasar input)
 
     // ==========================================
     // 2. CONSTRUCTOR
@@ -81,13 +85,18 @@ public class TransaksiView extends JPanel {
         mainContent.setLayout(new BoxLayout(mainContent, BoxLayout.Y_AXIS));
         mainContent.setBackground(COLOR_BG_MAIN);
 
-        // Judul Halaman
+        // Judul Halaman (Dibungkus panel agar menempel di ujung kiri)
+        JPanel pnlTitle = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        pnlTitle.setBackground(COLOR_BG_MAIN);
+        pnlTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pnlTitle.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40)); 
+        
         JLabel lblTitle = new JLabel("Transaksi Baru");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
         lblTitle.setForeground(COLOR_TEXT_HEADER);
-        lblTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pnlTitle.add(lblTitle);
         
-        mainContent.add(lblTitle);
+        mainContent.add(pnlTitle);
         mainContent.add(Box.createVerticalStrut(24));
         
         // Tambahkan Card 1, Card 2, dan Card 3
@@ -95,7 +104,7 @@ public class TransaksiView extends JPanel {
         mainContent.add(Box.createVerticalStrut(24));
         mainContent.add(buatCard(buatPanelTambahItem()));
         mainContent.add(Box.createVerticalStrut(24));
-        mainContent.add(buatCard(buatPanelTabelDanPembayaran())); // Tabel & Pembayaran gabung di Card ke-3
+        mainContent.add(buatCard(buatPanelTabelDanPembayaran())); 
 
         JScrollPane mainScroll = new JScrollPane(mainContent);
         mainScroll.setBorder(null);
@@ -123,9 +132,10 @@ public class TransaksiView extends JPanel {
         btnTambahSparepart = buatButton("+ Tambah", COLOR_PRIMARY);
 
         cmbMetodePembayaran = new JComboBox<>(new String[]{"Tunai (Cash)", "Transfer Bank", "QRIS", "Kartu Debit"});
-        cmbMetodePembayaran.setBackground(Color.WHITE);
+        cmbMetodePembayaran.setBackground(COLOR_INPUT_BG);
         cmbMetodePembayaran.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         cmbMetodePembayaran.setPreferredSize(new Dimension(0, 40));
+        cmbMetodePembayaran.setBorder(new RoundedBorder(COLOR_INPUT_BG, 15)); // Custom rounded border class
 
         txtJumlahBayar = buatTextField("0");
         lblKembalian = new JLabel("Rp 0");
@@ -231,13 +241,27 @@ public class TransaksiView extends JPanel {
         gridHitung.add(buatInputPanel("Metode Pembayaran", cmbMetodePembayaran));
         gridHitung.add(buatInputPanel("Jumlah Bayar", txtJumlahBayar));
         
-        // Panel khusus untuk tampilan kembalian
-        JPanel pnlKembalianBox = new JPanel(new BorderLayout());
-        pnlKembalianBox.setBackground(COLOR_BG_MAIN);
-        pnlKembalianBox.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(COLOR_BORDER, 1, true),
-            new EmptyBorder(5, 10, 5, 10)
-        ));
+        // Panel khusus untuk tampilan kembalian (Dibuat lengkung juga)
+        JPanel pnlKembalianBox = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(COLOR_BG_MAIN);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                g2.dispose();
+            }
+            @Override
+            protected void paintBorder(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(COLOR_BORDER);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                g2.dispose();
+            }
+        };
+        pnlKembalianBox.setOpaque(false);
+        pnlKembalianBox.setBorder(new EmptyBorder(5, 15, 5, 15));
         pnlKembalianBox.add(lblKembalian, BorderLayout.CENTER);
         gridHitung.add(buatInputPanel("Kembalian", pnlKembalianBox));
 
@@ -272,17 +296,59 @@ public class TransaksiView extends JPanel {
     }
         
     // ==========================================
-    // 5. HELPER UI (DESAIN KOMPONEN)
+    // 5. HELPER UI (DESAIN KOMPONEN & LENGKUNGAN)
     // ==========================================
     
-    // Membungkus panel menjadi Card putih ala Tailwind
+    // Custom Class untuk memberikan Border Lengkung pada komponen standar seperti ComboBox
+    class RoundedBorder implements javax.swing.border.Border {
+        private int radius;
+        private Color color;
+        RoundedBorder(Color color, int radius) {
+            this.radius = radius;
+            this.color = color;
+        }
+        public Insets getBorderInsets(Component c) {
+            return new Insets(4, 10, 4, 10);
+        }
+        public boolean isBorderOpaque() { return false; }
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(color);
+            g2.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
+            g2.dispose();
+        }
+    }
+
+    // Membungkus panel menjadi Card putih lengkung ala Tailwind
     private JPanel buatCard(JPanel contentPanel) {
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setBackground(COLOR_CARD_BG);
-        wrapper.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(COLOR_BORDER, 1, true), // Rounded semu
-                new EmptyBorder(24, 24, 24, 24)        // Padding dalam p-6
-        ));
+        JPanel wrapper = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Background Card Putih
+                g2.setColor(COLOR_CARD_BG);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20); 
+                g2.dispose();
+            }
+            @Override
+            protected void paintBorder(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Garis Border Card
+                g2.setColor(COLOR_BORDER);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20); 
+                g2.dispose();
+            }
+        };
+        wrapper.setOpaque(false); // Matikan background kaku bawaan panel
+        wrapper.setBackground(COLOR_BG_MAIN);
+        wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
+        wrapper.setBorder(new EmptyBorder(24, 24, 24, 24));
+        
+        contentPanel.setOpaque(false); // Agar konten di dalamnya transparan dan tidak menutupi lengkungan Card
         wrapper.add(contentPanel, BorderLayout.CENTER);
         return wrapper;
     }
@@ -290,7 +356,7 @@ public class TransaksiView extends JPanel {
     // Menggabungkan Label (atas) dan Input (bawah)
     private JPanel buatInputPanel(String labelText, JComponent input) {
         JPanel pnl = new JPanel(new BorderLayout(0, 8));
-        pnl.setBackground(COLOR_CARD_BG);
+        pnl.setOpaque(false); // Transparan mengikuti background Card
         
         JLabel lbl = new JLabel(labelText);
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
@@ -301,23 +367,82 @@ public class TransaksiView extends JPanel {
         return pnl;
     }
 
-    private JTextField buatTextField(String placeholder) {
-        JTextField txt = new JTextField();
+    // TextField LENGKUNG DENGAN EFEK FOCUS & PLACEHOLDER KUSTOM
+    private JTextField buatTextField(String placeholderText) {
+        JTextField txt = new JTextField() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Gambar background lengkung (Otomatis berubah warna saat di-klik lewat MouseListener)
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                
+                super.paintComponent(g); // Gambar isi teks asli
+                
+                // Gambar placeholder transparan
+                if (getText().isEmpty() && !isFocusOwner()) {
+                    g2.setColor(new Color(148, 163, 184)); // Warna abu-abu pudar
+                    g2.setFont(getFont().deriveFont(Font.ITALIC));
+                    int y = (getHeight() - g.getFontMetrics().getHeight()) / 2 + g.getFontMetrics().getAscent();
+                    g2.drawString(placeholderText, 12, y);
+                }
+                g2.dispose();
+            }
+
+            @Override
+            protected void paintBorder(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Gambar Border (Berubah jadi Biru jika sedang diklik/fokus)
+                g2.setColor(isFocusOwner() ? COLOR_PRIMARY : COLOR_INPUT_BG);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                g2.dispose();
+            }
+        };
+        
+        txt.setOpaque(false); // Matikan background kaku bawaan JTextField
         txt.setPreferredSize(new Dimension(0, 40)); 
-        txt.setBackground(Color.WHITE);
+        txt.setBackground(COLOR_INPUT_BG);
         txt.setForeground(COLOR_TEXT_HEADER);
-        txt.setCaretColor(Color.BLACK);
+        txt.setCaretColor(COLOR_TEXT_HEADER);
         txt.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        txt.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(COLOR_BORDER, 1, true), 
-                new EmptyBorder(5, 10, 5, 10)
-        ));
-        txt.setToolTipText(placeholder);
+        txt.setBorder(new EmptyBorder(5, 12, 5, 12)); // Hanya mengatur jarak teks ke tepi
+        
+        // Efek Highlight saat di-klik
+        txt.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                txt.setBackground(Color.WHITE); // Background kotak jadi putih
+                txt.repaint(); // Memaksa sistem untuk menggambar ulang kotak (termasuk border biru)
+            }
+
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                txt.setBackground(COLOR_INPUT_BG); // Kembali ke abu-abu
+                txt.repaint();
+            }
+        });
+
         return txt;
     }
 
+    // Tombol Biru LENGKUNG
     private JButton buatButton(String text, Color bg) {
-        JButton btn = new JButton(text);
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Background Biru Lengkung
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                super.paintComponent(g); // Gambar teks putih
+                g2.dispose();
+            }
+        };
+        btn.setContentAreaFilled(false); // Matikan background kotak bawaan
         btn.setBackground(bg);
         btn.setForeground(Color.WHITE);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -341,7 +466,6 @@ public class TransaksiView extends JPanel {
         catch (NumberFormatException e) { return 1; }
     }
 
-    // Tambahan untuk bagian pembayaran
     public String getMetodePembayaran() { 
         return cmbMetodePembayaran.getSelectedItem().toString(); 
     }
@@ -359,7 +483,7 @@ public class TransaksiView extends JPanel {
         lblTotalBiaya.setText("Rp " + String.format("%,d", total).replace(",", "."));
     }
 
-    public void setKembalian(int  kembalian) {
+    public void setKembalian(int kembalian) {
         if (kembalian < 0) {
             lblKembalian.setForeground(COLOR_DANGER);
             lblKembalian.setText("Rp " + String.format("%,d", kembalian).replace(",", "."));
@@ -377,82 +501,58 @@ public class TransaksiView extends JPanel {
     public void addTambahJasaListener(ActionListener listener) { btnTambahJasa.addActionListener(listener); }
     public void addTambahSparepartListener(ActionListener listener) { btnTambahSparepart.addActionListener(listener); }
     public void addSelesaikanTransaksiListener(ActionListener listener) { btnSelesaikanTransaksi.addActionListener(listener); }
-    
-    // Listener ini penting agar Controller bisa menghitung kembalian setiap kali user mengetik nominal bayar
     public void addJumlahBayarListener(DocumentListener listener) { txtJumlahBayar.getDocument().addDocumentListener(listener); }
 
     // ==========================================
-    // 8. RENDER TABEL & POPUP (Disempurnakan)
+    // 8. RENDER TABEL & POPUP
     // ==========================================
-  // ==========================================
-    // METHOD UNTUK MENAMPILKAN AUTO-SUGGEST
-    // ==========================================
-
     public void tampilkanSaranJasa(List<String> listJasa) {
-        // 1. Bersihkan isi popup lama agar tidak menumpuk dengan pencarian baru
         popupSaranJasa.removeAll();
 
-        // 2. Jika database tidak menemukan hasil, sembunyikan popup
         if (listJasa == null || listJasa.isEmpty()) {
             popupSaranJasa.setVisible(false);
             return;
         }
 
-        // 3. Buat menu item untuk setiap data yang ditemukan
         for (String saran : listJasa) {
             javax.swing.JMenuItem itemMenu = new javax.swing.JMenuItem(saran);
-            
-            // 4. Beri aksi: Jika kasir mengklik salah satu saran ini...
             itemMenu.addActionListener(e -> {
-                txtSearchJasa.setText(saran);     // Isi TextField dengan nama jasa yang diklik
-                popupSaranJasa.setVisible(false); // Tutup kotak saran
+                txtSearchJasa.setText(saran);    
+                popupSaranJasa.setVisible(false); 
             });
-            
             popupSaranJasa.add(itemMenu);
         }
 
-        // 5. Munculkan popup tepat di bawah txtSearchJasa
         popupSaranJasa.show(txtSearchJasa, 0, txtSearchJasa.getHeight());
-        
-        // 6. Kembalikan kursor ke dalam TextField agar kasir tidak perlu klik ulang TextField-nya
         txtSearchJasa.requestFocusInWindow();
     }
 
     public void tampilkanSaranSparepart(List<String> listSparepart) {
-        // 1. Bersihkan isi popup lama
         popupSaranSparepart.removeAll();
 
-        // 2. Sembunyikan jika kosong
         if (listSparepart == null || listSparepart.isEmpty()) {
             popupSaranSparepart.setVisible(false);
             return;
         }
 
-        // 3. Buat menu item
         for (String saran : listSparepart) {
             javax.swing.JMenuItem itemMenu = new javax.swing.JMenuItem(saran);
-            
-            // 4. Aksi klik
             itemMenu.addActionListener(e -> {
                 txtSearchSparepart.setText(saran);
                 popupSaranSparepart.setVisible(false);
             });
-            
             popupSaranSparepart.add(itemMenu);
         }
 
-        // 5. Munculkan popup tepat di bawah txtSearchSparepart
         popupSaranSparepart.show(txtSearchSparepart, 0, txtSearchSparepart.getHeight());
-        
-        // 6. Kembalikan kursor
         txtSearchSparepart.requestFocusInWindow();
     }
+
     public void bersihkanSemuaInput() { /* Logika Reset Sama */ }
 
     public void renderDaftarKeranjang(List<Object[]> listJasa, List<Object[]> listSparepart, Consumer<String> onDelete) {
         pnlDaftarItem.removeAll(); 
 
-        // Header Tabel
         JPanel pnlHeader = new JPanel(new GridLayout(1, 6, 10, 0));
         pnlHeader.setBackground(COLOR_CARD_BG);
         pnlHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, COLOR_BORDER)); 
@@ -495,7 +595,6 @@ public class TransaksiView extends JPanel {
         pnlRow.setPreferredSize(new Dimension(800, 50));
         pnlRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
 
-        // Badge ala Tailwind
         String badgeBg = jenis.equals("Jasa") ? "#DBEAFE" : "#D1FAE5";
         String badgeFg = jenis.equals("Jasa") ? "#1D4ED8" : "#15803D";
         JLabel lblJenis = new JLabel("<html><div style='background-color:"+badgeBg+"; color:"+badgeFg+"; padding:3px 8px; border-radius:4px; font-size:10px;'>"+jenis+"</div></html>");
@@ -526,12 +625,11 @@ public class TransaksiView extends JPanel {
         lbl.setForeground(isHeader ? COLOR_TEXT_HEADER : COLOR_TEXT_LABEL);
         return lbl;
     }
+    
     // ==========================================
     // POP-UP PESAN & STRUK
     // ==========================================
-    
     public void tampilkanPesan(String pesan) {
-        // Cek apakah pesan error (mengandung kata Gagal/Kurang) untuk mengubah tipe icon
         int messageType = pesan.toLowerCase().contains("gagal") || pesan.toLowerCase().contains("kurang") 
                           ? javax.swing.JOptionPane.ERROR_MESSAGE 
                           : javax.swing.JOptionPane.INFORMATION_MESSAGE;
@@ -542,12 +640,12 @@ public class TransaksiView extends JPanel {
     public void tampilkanStruk(String dataStruk) {
         javax.swing.JTextArea txtStruk = new javax.swing.JTextArea(dataStruk);
         txtStruk.setEditable(false);
-        txtStruk.setFont(new Font("Monospaced", Font.PLAIN, 13)); // Menggunakan Monospaced agar tabel struk rata
+        txtStruk.setFont(new Font("Monospaced", Font.PLAIN, 13)); 
         txtStruk.setBackground(new Color(250, 250, 250));
         txtStruk.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         javax.swing.JScrollPane scrollPane = new javax.swing.JScrollPane(txtStruk);
-        scrollPane.setPreferredSize(new Dimension(350, 450)); // Menyesuaikan ukuran struk agar pas di layar
+        scrollPane.setPreferredSize(new Dimension(350, 450)); 
         scrollPane.setBorder(BorderFactory.createLineBorder(COLOR_BORDER));
 
         javax.swing.JOptionPane.showMessageDialog(this, scrollPane, "Struk Pembayaran", javax.swing.JOptionPane.PLAIN_MESSAGE);

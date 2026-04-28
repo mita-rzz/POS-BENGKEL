@@ -7,17 +7,19 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.RenderingHints;
 import java.awt.event.ActionListener;
 import java.util.Date;
 import java.util.List;
 
-import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -42,245 +44,343 @@ public class RestockView extends JPanel {
     private JTextField txtBiaya;
     private JTextField txtSupplier;
 
-    // Palet Warna (Disesuaikan persis dengan tema JasaView)
-    private final Color COLOR_BG_MAIN = new Color(26, 26, 36);       // Menyamai COLOR_BG
-    private final Color COLOR_BG_PANEL = new Color(37, 37, 51);      // Menyamai COLOR_PANEL
-    private final Color COLOR_INPUT_BG = new Color(30, 30, 40);      // Menyamai COLOR_INPUT_BG
-    private final Color COLOR_TEXT_NORMAL = new Color(220, 220, 220);// Menyamai COLOR_TEXT
-    private final Color COLOR_ACCENT = new Color(216, 67, 97);       // Menyamai COLOR_BTN_PINK
-    private final Color COLOR_BORDER = new Color(60, 60, 75);        // Warna border textField
+    // Palet Warna (Light Theme modern ala Tailwind)
+    private final Color COLOR_BG_MAIN = new Color(248, 250, 252);     // slate-50
+    private final Color COLOR_CARD_BG = Color.WHITE;
+    private final Color COLOR_BORDER = new Color(226, 232, 240);      // slate-200
+    private final Color COLOR_TEXT_HEADER = new Color(30, 41, 59);    // slate-800
+    private final Color COLOR_TEXT_LABEL = new Color(71, 85, 105);    // slate-600
+    private final Color COLOR_PRIMARY = new Color(58, 176, 255);      // #3AB0FF (Biru tombol)
+    private final Color COLOR_INPUT_BG = new Color(241, 245, 249);    // slate-100
 
     // ==========================================
     // 2. CONSTRUCTOR
     // ==========================================
     public RestockView() {
-        setLayout(new BorderLayout(20, 20));
+        setLayout(new BorderLayout());
         setBackground(COLOR_BG_MAIN);
-        setBorder(new EmptyBorder(20, 20, 20, 20));
+        setBorder(new EmptyBorder(24, 24, 24, 24));
 
-        // -- INISIALISASI KOMPONEN --
         initKomponen();
 
-        // Panel Atas (Menampung Judul dan Form)
-        JPanel pnlAtas = new JPanel();
-        pnlAtas.setLayout(new BoxLayout(pnlAtas, BoxLayout.Y_AXIS));
-        pnlAtas.setBackground(COLOR_BG_MAIN);
+        // Main Wrapper
+        JPanel mainContent = new JPanel();
+        mainContent.setLayout(new BoxLayout(mainContent, BoxLayout.Y_AXIS));
+        mainContent.setBackground(COLOR_BG_MAIN);
 
-        // Judul Halaman
-        JLabel lblTitle = new JLabel("Mengisi Stock");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        lblTitle.setForeground(Color.WHITE);
-        lblTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        // Judul Halaman Paling Atas (Dikunci agar menempel di kiri)
+        JPanel pnlTitle = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        pnlTitle.setBackground(COLOR_BG_MAIN);
+        pnlTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pnlTitle.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40)); 
+        
+        JLabel lblTitle = new JLabel("Isi Stok (Barang Masuk)");
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        lblTitle.setForeground(COLOR_TEXT_HEADER);
+        pnlTitle.add(lblTitle);
 
-        pnlAtas.add(lblTitle);
-        pnlAtas.add(Box.createVerticalStrut(20)); // Jarak antara judul dan form
-        pnlAtas.add(buatPanelFormRestock());
+        mainContent.add(pnlTitle);
+        mainContent.add(Box.createVerticalStrut(24));
+        
+        // Memasukkan Card Form Restock
+        mainContent.add(buatPanelFormRestock());
 
-        // Tambahkan ke Frame Utama (Hanya di bagian North, sisanya kosong sesuai gambar)
-        add(pnlAtas, BorderLayout.NORTH);
+        // Tambahkan ke BorderLayout.NORTH agar elemen merapat ke atas layar
+        add(mainContent, BorderLayout.NORTH);
     }
 
     // ==========================================
     // 3. INISIALISASI & DESAIN KOMPONEN (UI HELPER)
     // ==========================================
     private void initKomponen() {
-        // Kotak pencarian sparepart (Mengetik untuk memunculkan popup)
-        txtSearchSparepart = buatTextField("Ketik nama sparepart...");
+        txtSearchSparepart = buatTextField("Pilih sparepart...");
         popupSaranSparepart = new JPopupMenu();
 
-        txtJumlahMasuk = buatTextField("Masukkan jumlah");
-        txtBiaya = buatTextField("Masukkan total biaya...");
-        txtSupplier = buatTextField("Masukkan nama supplier...");
-        
-        // Konfigurasi JDateChooser
+        txtJumlahMasuk = buatTextField("Contoh: 10");
+        txtBiaya = buatTextField("Contoh: 500000");
+        txtSupplier = buatTextField("Contoh: PT. Supplier Sparepart");
+
+        // Konfigurasi JDateChooser & Efek Focus
         txtTanggalMasuk = new JDateChooser();
         txtTanggalMasuk.setDateFormatString("dd / MM / yyyy");
-        txtTanggalMasuk.setPreferredSize(new Dimension(0, 35));
-        txtTanggalMasuk.getJCalendar().setBackground(Color.WHITE); 
+        txtTanggalMasuk.setPreferredSize(new Dimension(0, 40));
         
-        // Konfigurasi Tombol sesuai dengan btnSimpanJasa di referensi
-        btnUpdateStok = new JButton("Update Stok");
-        btnUpdateStok.setBackground(COLOR_ACCENT);
-        btnUpdateStok.setForeground(Color.WHITE);
-        btnUpdateStok.setFocusPainted(false);
-        btnUpdateStok.setBorderPainted(false);
-        btnUpdateStok.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnUpdateStok.setPreferredSize(new Dimension(130, 35));
-        btnUpdateStok.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        JTextField dateTextField = (JTextField) txtTanggalMasuk.getDateEditor().getUiComponent();
+        dateTextField.setBackground(COLOR_INPUT_BG);
+        dateTextField.setForeground(COLOR_TEXT_HEADER);
+        dateTextField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        dateTextField.setBorder(new RoundedBorder(COLOR_INPUT_BG, 15)); // Custom class border lengkung
+        
+        // Efek Highlight khusus untuk JDateChooser
+        dateTextField.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                dateTextField.setBackground(Color.WHITE);
+                dateTextField.setBorder(new RoundedBorder(COLOR_PRIMARY, 15));
+                dateTextField.repaint();
+            }
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                dateTextField.setBackground(COLOR_INPUT_BG);
+                dateTextField.setBorder(new RoundedBorder(COLOR_INPUT_BG, 15));
+                dateTextField.repaint();
+            }
+        });
+
+        // Tombol Update Stok
+        btnUpdateStok = buatButtonUtama("Update Stok");
     }
 
     private JPanel buatPanelFormRestock() {
-        JPanel pnl = new JPanel();
-        pnl.setBackground(COLOR_BG_PANEL);
+        JPanel pnlCard = new JPanel();
+        pnlCard.setLayout(new BoxLayout(pnlCard, BoxLayout.Y_AXIS));
+        pnlCard.setOpaque(false); // Transparan agar ujung Card bisa lengkung
 
-        // Membuat border kotak tanpa TitledBorder, menyesuaikan referensi JasaView
-        pnl.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_BG_PANEL.darker(), 1),
-                BorderFactory.createEmptyBorder(15, 20, 15, 20)
-        ));
-
-        pnl.setLayout(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(8, 5, 8, 5); // Jarak antar elemen
-
-        // ================= BARIS 0 (Y = 0) : Judul Form =================
-        gbc.gridy = 0;
-        gbc.gridx = 0;
-        gbc.gridwidth = 2; // Membentang dari kiri ke kanan
-        JLabel lblFormTitle = new JLabel("Form Pengisian Stock Masuk");
-        lblFormTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lblFormTitle.setForeground(Color.WHITE);
-        pnl.add(lblFormTitle, gbc);
-
-        // Kembalikan gridwidth ke 1 untuk kolom form
-        gbc.gridwidth = 1;
-
-        // ================= BARIS 1 (Y = 1) : Label =================
-        gbc.gridy = 1; 
+        // Judul Form
+        JPanel pnlFormTitle = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        pnlFormTitle.setOpaque(false);
+        pnlFormTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        gbc.gridx = 0; 
-        gbc.weightx = 0.5;
-        pnl.add(buatLabel("Pilih Sparepart yang akan diisi"), gbc);
+        JLabel lblFormTitle = new JLabel("Form Pengisian Stok Masuk");
+        lblFormTitle.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        lblFormTitle.setForeground(COLOR_TEXT_HEADER);
+        pnlFormTitle.add(lblFormTitle);
+
+        // Baris 1: Pilih Sparepart & Jumlah Masuk
+        JPanel row1 = new JPanel(new GridLayout(1, 2, 20, 0));
+        row1.setOpaque(false);
+        row1.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row1.add(buatInputPanel("Pilih Sparepart", txtSearchSparepart));
+        row1.add(buatInputPanel("Jumlah Barang Masuk (Qty)", txtJumlahMasuk));
+
+        // Baris 2: Total Biaya & Tanggal Masuk
+        JPanel row2 = new JPanel(new GridLayout(1, 2, 20, 0));
+        row2.setOpaque(false);
+        row2.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row2.add(buatInputPanel("Total Biaya Pembelian (Rp)", txtBiaya));
+        row2.add(buatInputPanel("Tanggal Masuk", txtTanggalMasuk));
+
+        // Baris 3: Nama Supplier (Memanjang / Full Width)
+        JPanel row3 = buatInputPanel("Nama Supplier", txtSupplier);
+        row3.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Baris 4: Tombol Simpan diletakkan di Kanan
+        JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        pnlBtn.setOpaque(false);
+        pnlBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pnlBtn.add(btnUpdateStok);
+
+        // Menyusun elemen ke dalam panel
+        pnlCard.add(pnlFormTitle);
+        pnlCard.add(Box.createVerticalStrut(20));
+        pnlCard.add(row1);
+        pnlCard.add(Box.createVerticalStrut(15));
+        pnlCard.add(row2);
+        pnlCard.add(Box.createVerticalStrut(15));
+        pnlCard.add(row3);
+        pnlCard.add(Box.createVerticalStrut(20));
+        pnlCard.add(pnlBtn);
+
+        // Bungkus dengan Card Border
+        return buatCardWrapper(pnlCard);
+    }
+
+    // ==========================================
+    // 4. HELPER UI (DESAIN KOMPONEN & LENGKUNGAN)
+    // ==========================================
+    
+    // Custom Class untuk memberikan Border Lengkung komponen standar (seperti Kalender)
+    class RoundedBorder implements javax.swing.border.Border {
+        private int radius;
+        private Color color;
+        RoundedBorder(Color color, int radius) {
+            this.radius = radius;
+            this.color = color;
+        }
+        public Insets getBorderInsets(Component c) { return new Insets(4, 10, 4, 10); }
+        public boolean isBorderOpaque() { return false; }
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(color);
+            g2.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
+            g2.dispose();
+        }
+    }
+
+    // Helper untuk membungkus panel menjadi bentuk "Card" putih lengkung
+    private JPanel buatCardWrapper(JPanel contentPanel) {
+        JPanel wrapper = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Background Card Putih
+                g2.setColor(COLOR_CARD_BG);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20); 
+                g2.dispose();
+            }
+            @Override
+            protected void paintBorder(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Garis Border Card
+                g2.setColor(COLOR_BORDER);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20); 
+                g2.dispose();
+            }
+        };
+        wrapper.setOpaque(false);
+        wrapper.setBackground(COLOR_BG_MAIN);
+        wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
+        wrapper.setBorder(new EmptyBorder(24, 24, 24, 24));
         
-        gbc.gridx = 1; 
-        gbc.weightx = 0.5;
-        pnl.add(buatLabel("Total Biaya (Rp)"), gbc);
+        wrapper.add(contentPanel, BorderLayout.CENTER);
+        return wrapper;
+    }
 
-        // ================= BARIS 2 (Y = 2) : Input =================
-        gbc.gridy = 2;
-        gbc.insets = new Insets(0, 5, 10, 5); // Jarak input dan label bawahnya
+    // Helper menggabungkan Label dan Input
+    private JPanel buatInputPanel(String labelText, JComponent input) {
+        JPanel pnl = new JPanel(new BorderLayout(0, 8));
+        pnl.setOpaque(false);
         
-        gbc.gridx = 0;
-        pnl.add(txtSearchSparepart, gbc);
-
-        gbc.gridx = 1; 
-        pnl.add(txtBiaya, gbc);
-
-        // ================= BARIS 3 (Y = 3) : Label =================
-        gbc.gridy = 3; 
-        gbc.insets = new Insets(8, 5, 8, 5); // Kembalikan jarak normal
+        JLabel lbl = new JLabel(labelText);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lbl.setForeground(COLOR_TEXT_HEADER);
+        pnl.add(lbl, BorderLayout.NORTH);
+        pnl.add(input, BorderLayout.CENTER);
         
-        gbc.gridx = 0; 
-        pnl.add(buatLabel("Jumlah Barang Masuk"), gbc);
-
-        gbc.gridx = 1;
-        pnl.add(buatLabel("Tanggal Masuk"), gbc);
-
-        // ================= BARIS 4 (Y = 4) : Input =================
-        gbc.gridy = 4;
-        gbc.insets = new Insets(0, 5, 10, 5);
-        
-        gbc.gridx = 0; 
-        pnl.add(txtJumlahMasuk, gbc);
-
-        gbc.gridx = 1;
-        pnl.add(txtTanggalMasuk, gbc);
-
-        // ================= BARIS 5 (Y = 5) : Label Supplier =================
-        gbc.gridy = 5;
-        gbc.insets = new Insets(8, 5, 8, 5);
-        gbc.gridx = 0;
-        gbc.gridwidth = 2; // Membentang dari kiri ke kanan
-        pnl.add(buatLabel("Nama Supplier"), gbc);
-
-        // ================= BARIS 6 (Y = 6) : Input Supplier =================
-        gbc.gridy = 6;
-        gbc.insets = new Insets(0, 5, 10, 5);
-        pnl.add(txtSupplier, gbc);
-
-        // ================= BARIS 7 (Y = 7) : Tombol =================
-        gbc.gridy = 7;
-        gbc.gridwidth = 1; 
-        gbc.fill = GridBagConstraints.NONE; // Tombol jangan memanjang
-        gbc.anchor = GridBagConstraints.WEST; // Rata kiri
-        
-        // Membungkus tombol dengan FlowLayout seperti di JasaView
-        JPanel panelBtnUpdate = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        panelBtnUpdate.setBackground(COLOR_BG_PANEL);
-        panelBtnUpdate.add(btnUpdateStok);
-
-        pnl.add(panelBtnUpdate, gbc);
-
         return pnl;
     }
 
-    private JTextField buatTextField(String placeholder) {
-        JTextField txt = new JTextField();
-        txt.setPreferredSize(new Dimension(0, 35));
+    // Helper membuat TextField lengkung dengan efek focus
+    private JTextField buatTextField(String placeholderText) {
+        JTextField txt = new JTextField() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Gambar background lengkung
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                
+                super.paintComponent(g); 
+                
+                // Gambar placeholder transparan
+                if (getText().isEmpty() && !isFocusOwner()) {
+                    g2.setColor(new Color(148, 163, 184));
+                    g2.setFont(getFont().deriveFont(Font.ITALIC));
+                    int y = (getHeight() - g.getFontMetrics().getHeight()) / 2 + g.getFontMetrics().getAscent();
+                    g2.drawString(placeholderText, 12, y);
+                }
+                g2.dispose();
+            }
+
+            @Override
+            protected void paintBorder(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Gambar Border (Berubah jadi Biru jika sedang diklik/fokus)
+                g2.setColor(isFocusOwner() ? COLOR_PRIMARY : COLOR_INPUT_BG);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                g2.dispose();
+            }
+        };
+        
+        txt.setOpaque(false);
+        txt.setPreferredSize(new Dimension(0, 40));
         txt.setBackground(COLOR_INPUT_BG);
-        txt.setForeground(Color.WHITE);
-        txt.setCaretColor(Color.WHITE);
-        txt.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_BORDER),
-                BorderFactory.createEmptyBorder(5, 10, 5, 10)
-        ));
-        txt.setToolTipText(placeholder);
+        txt.setForeground(COLOR_TEXT_HEADER);
+        txt.setCaretColor(COLOR_TEXT_HEADER);
+        txt.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        txt.setBorder(new EmptyBorder(5, 12, 5, 12)); 
+
+        // Efek Highlight saat di-klik
+        txt.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                txt.setBackground(Color.WHITE);
+                txt.repaint();
+            }
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                txt.setBackground(COLOR_INPUT_BG);
+                txt.repaint();
+            }
+        });
+
         return txt;
     }
 
-    private JLabel buatLabel(String text) {
-        JLabel lbl = new JLabel(text);
-        lbl.setForeground(COLOR_TEXT_NORMAL);
-        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        return lbl;
+    // Helper membuat Button Biru Lengkung
+    private JButton buatButtonUtama(String text) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                super.paintComponent(g);
+                g2.dispose();
+            }
+        };
+        btn.setContentAreaFilled(false);
+        btn.setPreferredSize(new Dimension(140, 40));
+        btn.setBackground(COLOR_PRIMARY);
+        btn.setForeground(Color.WHITE);
+        btn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return btn;
     }
 
+
     // ==========================================
-    // 4. METHOD SESUAI RANCANGAN UML
+    // 5. METHOD SESUAI RANCANGAN UML
     // ==========================================
 
-    public String getSearchSparepart() {
-        return txtSearchSparepart.getText();
-    }
+    public String getSearchSparepart() { return txtSearchSparepart.getText(); }
 
     public int getJumlahMasuk() {
         try {
             return Integer.parseInt(txtJumlahMasuk.getText());
         } catch (NumberFormatException e) {
-            return 0; // Kembalikan 0 jika input kosong atau bukan angka
+            return 0; 
         }
     }
     
-    public String getSupplier() {
-        return txtSupplier.getText();
-    }
+    public String getSupplier() { return txtSupplier.getText(); }
     
-    public Date getTanggalMasuk() {
-        return txtTanggalMasuk.getDate();
-    }
+    public Date getTanggalMasuk() { return txtTanggalMasuk.getDate(); }
 
-    public void setTanggalMasuk(Date tanggal) {
-        txtTanggalMasuk.setDate(tanggal);
-    }
+    public void setTanggalMasuk(Date tanggal) { txtTanggalMasuk.setDate(tanggal); }
 
     public void tampilkanSaranSparepart(List<String> listSparepart) {
-        // Bersihkan sisa menu sebelumnya
         popupSaranSparepart.removeAll();
 
-        // Jika tidak ada hasil, sembunyikan popup
         if (listSparepart.isEmpty()) {
             popupSaranSparepart.setVisible(false);
             return;
         }
 
-        // Masukkan hasil pencarian ke dalam menu
         for (String sp : listSparepart) {
             JMenuItem item = new JMenuItem(sp);
             item.addActionListener(e -> {
                 txtSearchSparepart.setText(sp);
-                popupSaranSparepart.setVisible(false); // Otomatis tutup saat dipilih
+                popupSaranSparepart.setVisible(false); 
             });
             popupSaranSparepart.add(item);
         }
 
-        // Kunci agar popup tidak mencuri fokus kursor dari textfield
         popupSaranSparepart.setFocusable(false);
 
-        // Tampilkan popup HANYA jika kursor sedang berada di kotak pencarian
         if (txtSearchSparepart.isFocusOwner()) {
             popupSaranSparepart.show(txtSearchSparepart, 0, txtSearchSparepart.getHeight());
-            txtSearchSparepart.requestFocusInWindow(); // Paksa kursor berkedip lagi di kotak
+            txtSearchSparepart.requestFocusInWindow(); 
         }
     }
 
@@ -293,8 +393,8 @@ public class RestockView extends JPanel {
         txtJumlahMasuk.setText("");
         txtTanggalMasuk.setDate(null);
         txtBiaya.setText("");
-        txtSearchSparepart.requestFocus(); // Kembalikan fokus ke kotak pertama
         txtSupplier.setText("");
+        txtSearchSparepart.requestFocus(); 
     }
 
     public void addKetikSparepartListener(DocumentListener listener) {
@@ -305,12 +405,11 @@ public class RestockView extends JPanel {
         btnUpdateStok.addActionListener(listener);
     }
     
-    // Tambahkan di bagian paling bawah RestockView.java
     public int getBiayaRestock() {
         try {
             return Integer.parseInt(txtBiaya.getText());
         } catch (NumberFormatException e) {
-            return 0; // Jika kosong atau bukan angka, kembalikan 0
+            return 0; 
         }
     }
 }

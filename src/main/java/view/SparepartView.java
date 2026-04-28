@@ -1,8 +1,30 @@
 package view;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridLayout;
+import java.awt.RenderingHints;
 import java.awt.event.ActionListener;
-import javax.swing.*;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 
 public class SparepartView extends JPanel {
@@ -14,214 +36,371 @@ public class SparepartView extends JPanel {
     private JTextField txtHargaModal;
     private JTextField txtHargaJual;
     private JTextField txtCari;
+    private JTextField txtStok; 
+    
     private JButton btnSimpanSparepart;
-    private JButton btnBatal;
+    private JButton btnBatal; // Tetap ada agar Controller tidak Error
     private JTable tblSparepart;
+    
     private JButton btnUbahInfo;
     private JButton btnHalamanSebelumnya;
     private JButton btnHalamanSelanjutnya;
     private JLabel lblInfoHalaman;
-    private JTextField txtStok; // Atau JSpinner jika kamu pakai spinner
-    // Palet Warna Tema Gelap AutoSys
-    private final Color COLOR_BG = new Color(26, 26, 36);
-    private final Color COLOR_PANEL = new Color(37, 37, 51);
-    private final Color COLOR_TEXT = new Color(220, 220, 220);
-    private final Color COLOR_BTN_PINK = new Color(216, 67, 97);
-    private final Color COLOR_BTN_DARK = new Color(50, 50, 70);
-    private final Color COLOR_INPUT_BG = new Color(30, 30, 40);
-    
+
+    // Palet Warna (Light Theme modern ala Tailwind)
+    private final Color COLOR_BG_MAIN = new Color(248, 250, 252);     // slate-50
+    private final Color COLOR_CARD_BG = Color.WHITE;
+    private final Color COLOR_BORDER = new Color(226, 232, 240);      // slate-200
+    private final Color COLOR_TEXT_HEADER = new Color(30, 41, 59);    // slate-800
+    private final Color COLOR_TEXT_LABEL = new Color(71, 85, 105);    // slate-600
+    private final Color COLOR_PRIMARY = new Color(58, 176, 255);      // #3AB0FF (Biru tombol)
+    private final Color COLOR_INPUT_BG = new Color(241, 245, 249);    // slate-100
+
     // ==========================================
     // 2. CONSTRUCTOR
     // ==========================================
     public SparepartView() {
-        setBackground(COLOR_BG);
-        setLayout(new BorderLayout(20, 20));
-        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setLayout(new BorderLayout());
+        setBackground(COLOR_BG_MAIN);
+        setBorder(new EmptyBorder(24, 24, 24, 24));
 
         initComponents();
+
+        // Main Wrapper dengan ScrollPane agar responsif
+        JPanel mainContent = new JPanel();
+        mainContent.setLayout(new BoxLayout(mainContent, BoxLayout.Y_AXIS));
+        mainContent.setBackground(COLOR_BG_MAIN);
+
+        // Judul Halaman Paling Atas (Di kunci di Kiri)
+        JPanel pnlTitle = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        pnlTitle.setBackground(COLOR_BG_MAIN);
+        pnlTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pnlTitle.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40)); 
+        
+        JLabel lblTitle = new JLabel("Atur Sparepart");
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        lblTitle.setForeground(COLOR_TEXT_HEADER);
+        pnlTitle.add(lblTitle);
+
+        mainContent.add(pnlTitle);
+        mainContent.add(Box.createVerticalStrut(24));
+        
+        // Memasukkan Card 1 (Form) dan Card 2 (Katalog Tabel)
+        mainContent.add(buatCardForm());
+        mainContent.add(Box.createVerticalStrut(24));
+        mainContent.add(buatCardKatalog());
+
+        JScrollPane mainScroll = new JScrollPane(mainContent);
+        mainScroll.setBorder(null);
+        mainScroll.getViewport().setBackground(COLOR_BG_MAIN);
+        mainScroll.getVerticalScrollBar().setUnitIncrement(16);
+
+        add(mainScroll, BorderLayout.CENTER);
     }
 
     private void initComponents() {
-        // --------------------------------------------------------
-        // PANEL ATAS: FORM PENGATURAN DATA SPAREPART
-        // --------------------------------------------------------
-        JPanel panelForm = new JPanel(new GridBagLayout());
-        panelForm.setBackground(COLOR_PANEL);
-        panelForm.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_PANEL.darker(), 1),
-                BorderFactory.createEmptyBorder(15, 20, 15, 20)
-        ));
+        // Inisialisasi TextFields
+        txtNamaSparepart = buatTextField("Contoh: Oli Mesin 1L");
+        txtHargaModal = buatTextField("Contoh: 50000");
+        txtHargaJual = buatTextField("Contoh: 75000");
+        txtStok = buatTextField("Contoh: 50");
+        txtCari = buatTextField("Cari sparepart...");
+        txtCari.setPreferredSize(new Dimension(250, 40));
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        gbc.insets = new Insets(5, 5, 5, 5);
-
-        // ========================================================
-        // MULAI COPY DARI SINI
-        // ========================================================
+        // Inisialisasi Buttons
+        btnSimpanSparepart = buatButtonUtama("Simpan Sparepart");
         
-        // 1. Judul Panel Form (Baris 0, Lebar 3 Kolom)
-        JLabel lblJudulForm = new JLabel("Pengaturan Data Sparepart");
-        lblJudulForm.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lblJudulForm.setForeground(Color.WHITE);
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 3; 
-        panelForm.add(lblJudulForm, gbc);
-
-        // 2. Label: Nama Sparepart (Baris 1, Lebar 3 Kolom)
-        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 3;
-        panelForm.add(createLabel("Nama Sparepart Baru / Edit"), gbc);
-
-        // 3. Input: Nama Sparepart (Baris 2, Lebar 3 Kolom)
-        txtNamaSparepart = createDarkTextField("Nama sparepart...");
-        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 3;
-        panelForm.add(txtNamaSparepart, gbc);
-
-        // --- KEMBALIKAN LEBAR MENJADI 1 KOLOM UNTUK BARIS SELANJUTNYA ---
-        gbc.gridwidth = 1; 
-
-        // 4. Label-Label di Baris 3 (Masing-masing 1 Kolom)
-        gbc.gridx = 0; gbc.gridy = 3;
-        panelForm.add(createLabel("Harga Beli (Rp)"), gbc);
-
-        gbc.gridx = 1; gbc.gridy = 3;
-        panelForm.add(createLabel("Harga Jual (Rp)"), gbc);
-
-        gbc.gridx = 2; gbc.gridy = 3;
-        panelForm.add(createLabel("Stok Awal / Edit"), gbc);
-
-        // 5. Input-Input di Baris 4 (Masing-masing 1 Kolom)
-        txtHargaModal = createDarkTextField("Harga beli dari supplier");
-        gbc.gridx = 0; gbc.gridy = 4;
-        panelForm.add(txtHargaModal, gbc);
-
-        txtHargaJual = createDarkTextField("Harga jual ke pelanggan");
-        gbc.gridx = 1; gbc.gridy = 4;
-        panelForm.add(txtHargaJual, gbc);
-
-        txtStok = createDarkTextField("Jumlah stok..."); // PASTIKAN txtStok SUDAH DIDEKLARASIKAN DI ATAS
-        gbc.gridx = 2; gbc.gridy = 4;
-        panelForm.add(txtStok, gbc);
-
-        // 6. Panel Tombol Simpan & Batal (Baris 5, Lebar 3 Kolom)
-        JPanel panelButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-        panelButtons.setBackground(COLOR_PANEL);
+        // Button Batal diinisialisasi agar Controller tidak Error, namun tidak dimasukkan ke tampilan
+        btnBatal = new JButton(); 
         
-        btnSimpanSparepart = createButton("Simpan Sparepart", COLOR_BTN_PINK);
-        btnBatal = createButton("Batal", COLOR_BTN_DARK);
+        btnUbahInfo = buatButtonOutline("Edit Baris Terpilih", COLOR_PRIMARY);
+        btnHalamanSebelumnya = buatButtonOutline("< Prev", COLOR_TEXT_LABEL);
+        btnHalamanSelanjutnya = buatButtonOutline("Next >", COLOR_TEXT_LABEL);
         
-        panelButtons.add(btnSimpanSparepart);
-        panelButtons.add(btnBatal);
+        lblInfoHalaman = new JLabel("Halaman 1 dari 1");
+        lblInfoHalaman.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblInfoHalaman.setForeground(COLOR_TEXT_LABEL);
+    }
 
-        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 3;
-        panelForm.add(panelButtons, gbc);
+    // ==========================================
+    // 3. PEMBUATAN CARD (FORM & KATALOG)
+    // ==========================================
+    private JPanel buatCardForm() {
+        JPanel pnl = new JPanel();
+        pnl.setLayout(new BoxLayout(pnl, BoxLayout.Y_AXIS));
+        pnl.setOpaque(false); // Transparan agar sudut Card lengkung bekerja
 
-        // ========================================================
-        // SELESAI COPY SAMPAI SINI (Lanjut ke panelKatalog)
-        // ========================================================
-        // --------------------------------------------------------
-        // PANEL BAWAH: KATALOG SPAREPART (TABEL, CARI, PAGING)
-        // --------------------------------------------------------
-        JPanel panelKatalog = new JPanel(new BorderLayout(0, 10));
-        panelKatalog.setBackground(COLOR_PANEL);
-        panelKatalog.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_PANEL.darker(), 1),
-                BorderFactory.createEmptyBorder(15, 20, 15, 20)
-        ));
-
-        // Header Katalog: Judul & Search
-        JPanel panelHeaderKatalog = new JPanel(new BorderLayout());
-        panelHeaderKatalog.setBackground(COLOR_PANEL);
+        // Judul Card
+        JPanel pnlFormTitle = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        pnlFormTitle.setOpaque(false);
+        pnlFormTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        JLabel lblJudulKatalog = new JLabel("Katalog Sparepart");
-        lblJudulKatalog.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lblJudulKatalog.setForeground(Color.WHITE);
-        panelHeaderKatalog.add(lblJudulKatalog, BorderLayout.WEST);
+        JLabel lblFormTitle = new JLabel("Pengaturan Data Sparepart");
+        lblFormTitle.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        lblFormTitle.setForeground(COLOR_TEXT_HEADER);
+        pnlFormTitle.add(lblFormTitle);
 
-        txtCari = createDarkTextField("Cari nama sparepart...");
-        txtCari.setPreferredSize(new Dimension(250, 30));
-        panelHeaderKatalog.add(txtCari, BorderLayout.EAST);
-        panelKatalog.add(panelHeaderKatalog, BorderLayout.NORTH);
+        // Baris 1: Nama Sparepart (Full)
+        JPanel row1 = buatInputPanel("Nama Sparepart", txtNamaSparepart);
+        row1.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Tabel Sparepart
+        // Baris 2: Harga Beli & Harga Jual (Bagi 2 kolom)
+        JPanel row2 = new JPanel(new GridLayout(1, 2, 20, 0));
+        row2.setOpaque(false);
+        row2.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row2.add(buatInputPanel("Harga Beli (Rp)", txtHargaModal));
+        row2.add(buatInputPanel("Harga Jual (Rp)", txtHargaJual));
+
+        // Baris 3: Stok Awal (Full)
+        JPanel row3 = buatInputPanel("Stok Awal", txtStok);
+        row3.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Baris 4: Tombol Simpan
+        JPanel pnlBtn = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        pnlBtn.setOpaque(false);
+        pnlBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pnlBtn.add(btnSimpanSparepart);
+
+        pnl.add(pnlFormTitle);
+        pnl.add(Box.createVerticalStrut(20));
+        pnl.add(row1);
+        pnl.add(Box.createVerticalStrut(15));
+        pnl.add(row2);
+        pnl.add(Box.createVerticalStrut(15));
+        pnl.add(row3);
+        pnl.add(Box.createVerticalStrut(20));
+        pnl.add(pnlBtn);
+
+        return buatCardWrapper(pnl);
+    }
+
+    private JPanel buatCardKatalog() {
+        JPanel pnl = new JPanel(new BorderLayout(0, 15));
+        pnl.setOpaque(false);
+
+        // -- HEADER: Judul & Cari --
+        JPanel pnlHeader = new JPanel(new BorderLayout());
+        pnlHeader.setOpaque(false);
+
+        JLabel lblTabelTitle = new JLabel("Katalog Sparepart");
+        lblTabelTitle.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        lblTabelTitle.setForeground(COLOR_TEXT_HEADER);
+        pnlHeader.add(lblTabelTitle, BorderLayout.WEST);
+
+        JPanel pnlCari = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        pnlCari.setOpaque(false);
+        pnlCari.add(txtCari);
+        pnlHeader.add(pnlCari, BorderLayout.EAST);
+
+        pnl.add(pnlHeader, BorderLayout.NORTH);
+
+        // -- TABEL --
         tblSparepart = new JTable();
-        tblSparepart.setRowHeight(35);
-        tblSparepart.setBackground(COLOR_BG);
-        tblSparepart.setForeground(COLOR_TEXT);
-        tblSparepart.setSelectionBackground(new Color(60, 60, 80));
-        tblSparepart.setGridColor(new Color(50, 50, 60));
-        tblSparepart.getTableHeader().setBackground(COLOR_PANEL.darker());
-        tblSparepart.getTableHeader().setForeground(Color.WHITE);
-        tblSparepart.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        tblSparepart.setRowHeight(45);
+        tblSparepart.setBackground(Color.WHITE);
+        tblSparepart.setForeground(COLOR_TEXT_HEADER);
+        tblSparepart.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        tblSparepart.setSelectionBackground(new Color(241, 245, 249)); 
+        tblSparepart.setSelectionForeground(COLOR_TEXT_HEADER);
+        tblSparepart.setGridColor(COLOR_BORDER);
+        tblSparepart.setShowVerticalLines(false); 
+        
+        tblSparepart.getTableHeader().setBackground(Color.WHITE);
+        tblSparepart.getTableHeader().setForeground(COLOR_TEXT_LABEL);
+        tblSparepart.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+        tblSparepart.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, COLOR_BORDER));
+        tblSparepart.getTableHeader().setReorderingAllowed(false);
 
         JScrollPane scrollPane = new JScrollPane(tblSparepart);
-        scrollPane.getViewport().setBackground(COLOR_BG);
-        scrollPane.setBorder(BorderFactory.createLineBorder(COLOR_PANEL.darker()));
-        panelKatalog.add(scrollPane, BorderLayout.CENTER);
+        scrollPane.getViewport().setBackground(Color.WHITE);
+        scrollPane.setBorder(BorderFactory.createLineBorder(COLOR_BORDER));
+        pnl.add(scrollPane, BorderLayout.CENTER);
 
-        // Footer Katalog: Aksi Ubah & Paging
-        JPanel panelFooter = new JPanel(new BorderLayout());
-        panelFooter.setBackground(COLOR_PANEL);
+        // -- FOOTER: Aksi & Paging --
+        JPanel pnlFooter = new JPanel(new BorderLayout());
+        pnlFooter.setOpaque(false);
 
-        btnUbahInfo = createButton("Ubah Info Baris Terpilih", COLOR_BTN_DARK);
-        panelFooter.add(btnUbahInfo, BorderLayout.WEST);
+        pnlFooter.add(btnUbahInfo, BorderLayout.WEST);
 
-        JPanel panelPaging = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        panelPaging.setBackground(COLOR_PANEL);
-        
-        btnHalamanSebelumnya = createButton("< Prev", COLOR_BTN_DARK);
-        btnHalamanSelanjutnya = createButton("Next >", COLOR_BTN_DARK);
-        lblInfoHalaman = new JLabel("Halaman 1");
-        lblInfoHalaman.setForeground(COLOR_TEXT);
-        
-        panelPaging.add(btnHalamanSebelumnya);
-        panelPaging.add(lblInfoHalaman);
-        panelPaging.add(btnHalamanSelanjutnya);
-        panelFooter.add(panelPaging, BorderLayout.EAST);
+        JPanel pnlPaging = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        pnlPaging.setOpaque(false);
+        pnlPaging.add(btnHalamanSebelumnya);
+        pnlPaging.add(lblInfoHalaman);
+        pnlPaging.add(btnHalamanSelanjutnya);
 
-        panelKatalog.add(panelFooter, BorderLayout.SOUTH);
+        pnlFooter.add(pnlPaging, BorderLayout.EAST);
+        pnl.add(pnlFooter, BorderLayout.SOUTH);
 
-        // Masukkan ke Panel Utama
-        add(panelForm, BorderLayout.NORTH);
-        add(panelKatalog, BorderLayout.CENTER);
+        return buatCardWrapper(pnl);
     }
 
     // ==========================================
-    // 3. HELPER METHODS FOR UI
+    // 4. HELPER UI (PEMBUNGKUS & DESAIN KOMPONEN LENGKUNG)
     // ==========================================
-    private JLabel createLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setForeground(COLOR_TEXT);
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        return label;
+    
+    // Membungkus panel menjadi Card putih melengkung ala Web
+    private JPanel buatCardWrapper(JPanel contentPanel) {
+        JPanel wrapper = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Background Card Putih
+                g2.setColor(COLOR_CARD_BG);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20); 
+                g2.dispose();
+            }
+            @Override
+            protected void paintBorder(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Garis Border Card
+                g2.setColor(COLOR_BORDER);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20); 
+                g2.dispose();
+            }
+        };
+        wrapper.setOpaque(false);
+        wrapper.setBackground(COLOR_BG_MAIN);
+        wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
+        wrapper.setBorder(new EmptyBorder(24, 24, 24, 24));
+        
+        wrapper.add(contentPanel, BorderLayout.CENTER);
+        return wrapper;
     }
 
-    private JTextField createDarkTextField(String placeholder) {
-        JTextField tf = new JTextField();
-        tf.setPreferredSize(new Dimension(0, 35));
-        tf.setBackground(COLOR_INPUT_BG);
-        tf.setForeground(Color.WHITE);
-        tf.setCaretColor(Color.WHITE);
-        tf.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(80, 40, 60)), // Border merah tua ala UI
-                BorderFactory.createEmptyBorder(5, 10, 5, 10)
-        ));
-        return tf;
+    private JPanel buatInputPanel(String labelText, JComponent input) {
+        JPanel pnl = new JPanel(new BorderLayout(0, 8));
+        pnl.setOpaque(false); // Transparan agar tidak mengganggu background Card lengkung
+        
+        JLabel lbl = new JLabel(labelText);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lbl.setForeground(COLOR_TEXT_HEADER);
+        pnl.add(lbl, BorderLayout.NORTH);
+        pnl.add(input, BorderLayout.CENTER);
+        
+        return pnl;
     }
 
-    private JButton createButton(String text, Color bg) {
-        JButton btn = new JButton(text);
-        btn.setBackground(bg);
+    // TextField LENGKUNG dengan Placeholder dan Efek Highlight
+    private JTextField buatTextField(String placeholderText) {
+        JTextField txt = new JTextField() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Background lengkung
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                
+                super.paintComponent(g); 
+                
+                // Menggambar placeholder transparan jika textfield kosong
+                if (getText().isEmpty() && !isFocusOwner()) {
+                    g2.setColor(new Color(148, 163, 184)); // Warna abu-abu pudar
+                    g2.setFont(getFont().deriveFont(Font.ITALIC));
+                    int y = (getHeight() - g.getFontMetrics().getHeight()) / 2 + g.getFontMetrics().getAscent();
+                    g2.drawString(placeholderText, 12, y);
+                }
+                g2.dispose();
+            }
+            
+            @Override
+            protected void paintBorder(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Berubah jadi biru jika diklik, abu-abu jika tidak
+                g2.setColor(isFocusOwner() ? COLOR_PRIMARY : COLOR_INPUT_BG);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                g2.dispose();
+            }
+        };
+        
+        txt.setOpaque(false);
+        txt.setPreferredSize(new Dimension(0, 40)); 
+        txt.setBackground(COLOR_INPUT_BG);
+        txt.setForeground(COLOR_TEXT_HEADER);
+        txt.setCaretColor(COLOR_TEXT_HEADER);
+        txt.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        txt.setBorder(new EmptyBorder(5, 12, 5, 12));
+
+        // Efek Highlight saat di-klik (FocusListener)
+        txt.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                txt.setBackground(Color.WHITE);
+                txt.repaint();
+            }
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                txt.setBackground(COLOR_INPUT_BG);
+                txt.repaint();
+            }
+        });
+
+        return txt;
+    }
+
+    // Tombol LENGKUNG Utama (Biru)
+    private JButton buatButtonUtama(String text) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                super.paintComponent(g);
+                g2.dispose();
+            }
+        };
+        btn.setContentAreaFilled(false);
+        btn.setPreferredSize(new Dimension(150, 40));
+        btn.setBackground(COLOR_PRIMARY);
         btn.setForeground(Color.WHITE);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         btn.setFocusPainted(false);
-        btn.setBorderPainted(false);
+        btn.setBorderPainted(false); 
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
+
+    // Tombol LENGKUNG Outline (Putih bergaris abu)
+    private JButton buatButtonOutline(String text, Color textColor) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                super.paintComponent(g);
+                g2.dispose();
+            }
+            @Override
+            protected void paintBorder(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(COLOR_BORDER);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
+                g2.dispose();
+            }
+        };
+        btn.setContentAreaFilled(false);
+        btn.setPreferredSize(new Dimension(150, 35));
+        btn.setBackground(COLOR_CARD_BG);
+        btn.setForeground(textColor);
+        btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false); 
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return btn;
     }
 
     // ==========================================
-    // 4. FUNCTIONAL METHODS (Sesuai UML)
+    // 5. FUNCTIONAL METHODS & LISTENERS (Controller Ready)
     // ==========================================
     public String getNamaSparepart() { return txtNamaSparepart.getText(); }
     
@@ -238,26 +417,17 @@ public class SparepartView extends JPanel {
     public void setNamaSparepart(String nama) { txtNamaSparepart.setText(nama); }
     
     public int getStok() {
-    // Ambil teks, ubah jadi angka. Jika kosong, kembalikan 0.
-    try {
-        return Integer.parseInt(txtStok.getText());
-    } catch (NumberFormatException e) {
-        return 0; 
+        try { return Integer.parseInt(txtStok.getText()); } 
+        catch (NumberFormatException e) { return 0; }
     }
-        }
 
-        public void setStok(int stok) {
-            txtStok.setText(String.valueOf(stok));
-        }
+    public void setStok(int stok) { txtStok.setText(String.valueOf(stok)); }
 
-
-    public void setHargaModal(int harga) { txtHargaModal.setText(String.valueOf((long)harga)); }
+    public void setHargaModal(int harga) { txtHargaModal.setText(String.valueOf(harga)); }
     
-    public void setHargaJual(int harga) { txtHargaJual.setText(String.valueOf((long)harga)); }
+    public void setHargaJual(int harga) { txtHargaJual.setText(String.valueOf(harga)); }
 
-    public void tampilkanDataTabel(DefaultTableModel data) {
-        tblSparepart.setModel(data);
-    }
+    public void tampilkanDataTabel(DefaultTableModel data) { tblSparepart.setModel(data); }
 
     public void setInfoHalaman(String info) { lblInfoHalaman.setText(info); }
 
@@ -277,17 +447,11 @@ public class SparepartView extends JPanel {
 
     public String getKeywordCari() { return txtCari.getText(); }
 
-    // ==========================================
-    // 5. LISTENERS (Sesuai UML)
-    // ==========================================
+    // Listeners
     public void addSimpanSparepartListener(ActionListener listener) { btnSimpanSparepart.addActionListener(listener); }
-    public void addBatalListener(ActionListener listener) { btnBatal.addActionListener(listener); }
+    public void addBatalListener(ActionListener listener) { btnBatal.addActionListener(listener); } // Tetap aman
     public void addUbahInfoListener(ActionListener listener) { btnUbahInfo.addActionListener(listener); }
     public void addHalamanSebelumnyaListener(ActionListener listener) { btnHalamanSebelumnya.addActionListener(listener); }
     public void addHalamanSelanjutnyaListener(ActionListener listener) { btnHalamanSelanjutnya.addActionListener(listener); }
-    
-    // Listener untuk Fitur Search (Real-time)
-    public void addCariListener(java.awt.event.KeyListener listener) {
-        txtCari.addKeyListener(listener);
-    }
+    public void addCariListener(java.awt.event.KeyListener listener) { txtCari.addKeyListener(listener); }
 }
