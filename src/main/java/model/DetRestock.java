@@ -54,7 +54,7 @@ public class DetRestock {
         this.jumlahRestock = jumlahRestock;
     }
 
-    public double getHargaSatuan() {
+    public int getHargaSatuan() {
         return hargaSatuan;
     }
 

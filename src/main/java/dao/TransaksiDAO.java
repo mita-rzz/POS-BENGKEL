@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List; // Sesuaikan dengan nama class koneksimu
+import java.util.List;
 
 import database.DatabaseConnection;
 import model.DetJasa;
@@ -20,8 +20,12 @@ public class TransaksiDAO {
     }
 
     public void simpanTransaksiUtama(Transaksi transaksi, List<DetJasa> listJasa, List<DetSparepart> listSparepart) throws SQLException {
-        String sqlTransaksi = "INSERT INTO tb_transaksi (id_user, nama_pelanggan, waktu_transaksi, total_bayar, status_pembayaran, nomor_kendaraan) VALUES (?, ?, ?, ?, ?, ?)";
-        String sqlDetJasa = "INSERT INTO tb_detail_transaksi_jasa (id_transaksi, id_jasa, nama_mekanik, tarif_jasa, sub_total) VALUES (?, ?, ?, ?, ?)";
+        // [UPDATE] Sesuaikan urutan dan nama kolom dengan tb_transaksi yang baru
+        String sqlTransaksi = "INSERT INTO tb_transaksi (id_user, nama_pelanggan, nomor_kendaraan, waktu_transaksi, total_biaya, jumlah_bayar, metode_pembayaran) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        
+        // [UPDATE] Tambahkan nama_jasa_snapshot pada tb_detail_transaksi_jasa
+        String sqlDetJasa = "INSERT INTO tb_detail_transaksi_jasa (id_transaksi, id_jasa, nama_jasa_snapshot, nama_mekanik, tarif_jasa, sub_total) VALUES (?, ?, ?, ?, ?, ?)";
+        
         String sqlDetSp = "INSERT INTO detail_transaksi_sparepart (id_transaksi, id_sparepart, jumlah, harga_jual, subtotal) VALUES (?, ?, ?, ?, ?)";
         String sqlUpdateStok = "UPDATE tb_sparepart SET stok = stok - ? WHERE id_sparepart = ?";
 
@@ -33,11 +37,14 @@ public class TransaksiDAO {
             PreparedStatement psTrans = connection.prepareStatement(sqlTransaksi, Statement.RETURN_GENERATED_KEYS);
             psTrans.setInt(1, transaksi.getIdUser());
             psTrans.setString(2, transaksi.getNamaPelanggan());
-           String waktuString = transaksi.getWaktuTransaksi().toString().replace("T", " ");
-            psTrans.setString(3, waktuString);
-            psTrans.setDouble(4, transaksi.getTotalBayar());
-            psTrans.setString(5, transaksi.getStatusPembayaran());
-            psTrans.setString(6, transaksi.getNomorKendaraan());
+            psTrans.setString(3, transaksi.getNomorKendaraan()); // Pindah ke index 3 sesuai query baru
+            
+            String waktuString = transaksi.getWaktuTransaksi().toString().replace("T", " ");
+            psTrans.setString(4, waktuString);
+            
+            psTrans.setInt(5, transaksi.getTotalBiaya());       // [UPDATE] Asumsi di Model diganti jadi getTotalBiaya()
+            psTrans.setInt(6, transaksi.getJumlahBayar());      // [UPDATE] Tambahan dari kolom baru
+            psTrans.setString(7, transaksi.getMetodePembayaran()); // [UPDATE] Tambahan dari kolom baru
             psTrans.executeUpdate();
 
             // Ambil ID Transaksi yang baru saja digenerate oleh database
@@ -52,9 +59,10 @@ public class TransaksiDAO {
             for (DetJasa dj : listJasa) {
                 psJasa.setInt(1, idTerakhir);
                 psJasa.setInt(2, dj.getIdJasa());
-                psJasa.setString(3, dj.getNamaJasa());
-                psJasa.setInt(4, dj.getTarifJasa());
-                psJasa.setInt(5, dj.getSubTotal());
+                psJasa.setString(3, dj.getNamaJasa());    // [UPDATE] Mengisi kolom nama_jasa_snapshot
+                psJasa.setString(4, dj.getNamaMekanik()); // [PERBAIKAN] Mengisi kolom nama_mekanik 
+                psJasa.setInt(5, dj.getTarifJasa());
+                psJasa.setInt(6, dj.getSubTotal());
                 psJasa.addBatch();
             }
             psJasa.executeBatch();

@@ -121,12 +121,12 @@ public class LaporanController {
             String strWaktu = (t.getWaktuTransaksi() != null) ? t.getWaktuTransaksi().format(formatterWaktu) : "-";
 
             Object[] baris = {
-                t.getIdTransaksi(),       // <--- Sudah diganti ke ID Transaksi
-                strWaktu,                 // <--- Sudah diganti ke Waktu Transaksi
-                t.getNamaPelanggan(),
-                t.getNomorKendaraan(),
-                formatRupiah.format(t.getTotalBayar()).replace(",00", "") // <--- Sudah diganti ke Total Bayar
-            };
+            t.getIdTransaksi(),       
+            strWaktu,                 
+            t.getNamaPelanggan(),
+            t.getNomorKendaraan(),
+            formatRupiah.format(t.getTotalBiaya()).replace(",00", "") // <--- GANTI JADI getTotalBiaya()
+                };
             model.addRow(baris);
         }
 

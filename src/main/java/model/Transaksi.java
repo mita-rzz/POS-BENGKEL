@@ -10,10 +10,13 @@ public class Transaksi {
     private int idTransaksi;
     private int idUser; // ID Kasir/Admin yang melayani
     private String namaPelanggan;
-    private LocalDateTime waktuTransaksi;
-    private int  totalBayar;
-    private String statusPembayaran;
     private String nomorKendaraan;
+    private LocalDateTime waktuTransaksi;
+    
+    // Atribut Pembayaran (Sesuai dengan Database Baru)
+    private int totalBiaya;
+    private int jumlahBayar;
+    private String metodePembayaran;
 
     // ==========================================
     // 2. CONSTRUCTOR KOSONG
@@ -50,6 +53,14 @@ public class Transaksi {
         this.namaPelanggan = namaPelanggan;
     }
 
+    public String getNomorKendaraan() {
+        return nomorKendaraan;
+    }
+
+    public void setNomorKendaraan(String nomorKendaraan) {
+        this.nomorKendaraan = nomorKendaraan;
+    }
+
     public LocalDateTime getWaktuTransaksi() {
         return waktuTransaksi;
     }
@@ -58,27 +69,27 @@ public class Transaksi {
         this.waktuTransaksi = waktuTransaksi;
     }
 
-    public int getTotalBayar() {
-        return totalBayar;
+    public int getTotalBiaya() {
+        return totalBiaya;
     }
 
-    public void setTotalBayar(int totalBayar) {
-        this.totalBayar = totalBayar;
+    public void setTotalBiaya(int totalBiaya) {
+        this.totalBiaya = totalBiaya;
     }
 
-    public String getStatusPembayaran() {
-        return statusPembayaran;
+    public int getJumlahBayar() {
+        return jumlahBayar;
     }
 
-    public void setStatusPembayaran(String statusPembayaran) {
-        this.statusPembayaran = statusPembayaran;
+    public void setJumlahBayar(int jumlahBayar) {
+        this.jumlahBayar = jumlahBayar;
     }
 
-    public String getNomorKendaraan() {
-        return nomorKendaraan;
+    public String getMetodePembayaran() {
+        return metodePembayaran;
     }
 
-    public void setNomorKendaraan(String nomorKendaraan) {
-        this.nomorKendaraan = nomorKendaraan;
+    public void setMetodePembayaran(String metodePembayaran) {
+        this.metodePembayaran = metodePembayaran;
     }
 }

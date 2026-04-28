@@ -5,9 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
- 
+
 import database.DatabaseConnection;
 import model.Transaksi;
 
@@ -30,7 +31,6 @@ public class LaporanDAO {
         String query = "SELECT * FROM tb_transaksi WHERE DATE(waktu_transaksi) BETWEEN ? AND ? ORDER BY waktu_transaksi DESC LIMIT ? OFFSET ?";
 
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            // UBAH UNTUK SQLITE: Gunakan setString karena SQLite menyimpan tanggal sebagai TEXT
             stmt.setString(1, tanggalAwal.toString()); 
             stmt.setString(2, tanggalAkhir.toString());
             stmt.setInt(3, limit);
@@ -43,18 +43,23 @@ public class LaporanDAO {
                     transaksi.setIdTransaksi(rs.getInt("id_transaksi"));
                     transaksi.setIdUser(rs.getInt("id_user"));
                     transaksi.setNamaPelanggan(rs.getString("nama_pelanggan"));
-                    
-                    // PENGAMANAN SQLITE: Kadang getTimestamp gagal di SQLite jika format text tidak presisi.
-                    // Tetap menggunakan getTimestamp, tapi jika kamu mengalami error "ParseException", 
-                    // kamu bisa menggantinya dengan rs.getString() lalu di-parse ke LocalDateTime.
-                    java.sql.Timestamp ts = rs.getTimestamp("waktu_transaksi");
-                    if (ts != null) {
-                        transaksi.setWaktuTransaksi(ts.toLocalDateTime());
-                    }
-                    
-                    transaksi.setTotalBayar(rs.getInt("total_bayar"));
-                    transaksi.setStatusPembayaran(rs.getString("status_pembayaran"));
                     transaksi.setNomorKendaraan(rs.getString("nomor_kendaraan"));
+                    
+                    // --- PERUBAHAN KOLOM BARU ---
+                    transaksi.setTotalBiaya(rs.getInt("total_biaya"));
+                    transaksi.setJumlahBayar(rs.getInt("jumlah_bayar"));
+                    transaksi.setMetodePembayaran(rs.getString("metode_pembayaran"));
+                    
+                    // --- CARA AMAN PARSING TANGGAL SQLITE ---
+                    String strWaktu = rs.getString("waktu_transaksi");
+                    if (strWaktu != null && !strWaktu.isEmpty()) {
+                        try {
+                            // Mengubah format "2023-10-25 14:30:00" menjadi "2023-10-25T14:30:00" agar bisa dibaca LocalDateTime
+                            transaksi.setWaktuTransaksi(LocalDateTime.parse(strWaktu.replace(" ", "T")));
+                        } catch (Exception ex) {
+                            System.err.println("Gagal parsing waktu: " + strWaktu);
+                        }
+                    }
                     
                     listLaporan.add(transaksi);
                 }
@@ -70,10 +75,10 @@ public class LaporanDAO {
     public int hitungTotalPendapatan(LocalDate tanggalAwal, LocalDate tanggalAkhir) {
         int totalPendapatan = 0;
         
-        String query = "SELECT SUM(total_bayar) AS total FROM tb_transaksi WHERE DATE(waktu_transaksi) BETWEEN ? AND ?";
+        // Ganti total_bayar menjadi total_biaya
+        String query = "SELECT SUM(total_biaya) AS total FROM tb_transaksi WHERE DATE(waktu_transaksi) BETWEEN ? AND ?";
 
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            // UBAH UNTUK SQLITE: Gunakan setString
             stmt.setString(1, tanggalAwal.toString());
             stmt.setString(2, tanggalAkhir.toString());
 
@@ -94,7 +99,6 @@ public class LaporanDAO {
         int jumlah = 0;
         String query = "SELECT COUNT(id_transaksi) AS jumlah FROM tb_transaksi WHERE DATE(waktu_transaksi) BETWEEN ? AND ?";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            // UBAH UNTUK SQLITE: Gunakan setString
             stmt.setString(1, tanggalAwal.toString());
             stmt.setString(2, tanggalAkhir.toString());
             

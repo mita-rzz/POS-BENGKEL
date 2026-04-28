@@ -84,7 +84,7 @@ public class LoginView extends JPanel {
         // ── Label Username ────────────────────────────────────────────────────
         JLabel lblUsername = new JLabel("Username");
         lblUsername.setForeground(COLOR_FG);
-        lblUsername.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblUsername.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         lblUsername.setBounds(36, 120, 348, 20);
         card.add(lblUsername);
 
@@ -123,7 +123,7 @@ public class LoginView extends JPanel {
         // ── Label Password ────────────────────────────────────────────────────
         JLabel lblPasswordText = new JLabel("Password");
         lblPasswordText.setForeground(COLOR_FG);
-        lblPasswordText.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblPasswordText.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         lblPasswordText.setBounds(36, 200, 348, 20);
         card.add(lblPasswordText);
         

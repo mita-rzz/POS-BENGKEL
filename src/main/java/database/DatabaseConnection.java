@@ -55,11 +55,15 @@ public class DatabaseConnection {
 
             // Tabel Transaksi
             stmt.execute("CREATE TABLE IF NOT EXISTS tb_transaksi (" +
-                         "id_transaksi INTEGER PRIMARY KEY AUTOINCREMENT, id_user INTEGER, " +
-                         "nama_pelanggan TEXT, waktu_transaksi TEXT, total_bayar INTEGER, " +
-                         "status_pembayaran TEXT, nomor_kendaraan TEXT, " +
-                         "FOREIGN KEY (id_user) REFERENCES tb_user(id_user));");
-
+                "id_transaksi INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                "id_user INTEGER, " +
+                "nama_pelanggan TEXT, " +
+                "nomor_kendaraan TEXT, " +
+                "waktu_transaksi TEXT, " +
+                "total_biaya INTEGER, " +      
+                "jumlah_bayar INTEGER, " +     
+                "metode_pembayaran TEXT, " +   
+                "FOREIGN KEY (id_user) REFERENCES tb_user(id_user));");
             // Tabel Restock
             stmt.execute("CREATE TABLE IF NOT EXISTS tb_restock (" +
                          "id_restock INTEGER PRIMARY KEY AUTOINCREMENT, id_user INTEGER, " +
@@ -67,12 +71,17 @@ public class DatabaseConnection {
                          "FOREIGN KEY (id_user) REFERENCES tb_user(id_user));");
 
             // Tabel Detail Transaksi Jasa
-            stmt.execute("CREATE TABLE IF NOT EXISTS tb_detail_transaksi_jasa (" +
-                         "id_detail_transaksi_jasa INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                         "id_transaksi INTEGER, id_jasa INTEGER, nama_mekanik TEXT, " +
-                         "tarif_jasa INTEGER, sub_total INTEGER, " +
-                         "FOREIGN KEY (id_transaksi) REFERENCES tb_transaksi(id_transaksi), " +
-                         "FOREIGN KEY (id_jasa) REFERENCES tb_jasa(id_jasa));");
+           // Tambahkan kolom nama_jasa_snapshot
+        stmt.execute("CREATE TABLE IF NOT EXISTS tb_detail_transaksi_jasa (" +
+                    "id_detail_transaksi_jasa INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "id_transaksi INTEGER, " +
+                    "id_jasa INTEGER, " + 
+                    "nama_jasa_snapshot TEXT, " + // <-- Tambahkan kolom ini
+                    "nama_mekanik TEXT, " +
+                    "tarif_jasa INTEGER, " +
+                    "sub_total INTEGER, " +
+                    "FOREIGN KEY (id_transaksi) REFERENCES tb_transaksi(id_transaksi), " +
+                    "FOREIGN KEY (id_jasa) REFERENCES tb_jasa(id_jasa));");
 
             // Tabel Detail Transaksi Sparepart
             stmt.execute("CREATE TABLE IF NOT EXISTS detail_transaksi_sparepart (" +
@@ -87,6 +96,11 @@ public class DatabaseConnection {
                          "id_sparepart INTEGER, jumlah_restock INTEGER, subtotal_restock INTEGER, " +
                          "FOREIGN KEY (id_restock) REFERENCES tb_restock(id_restock), " +
                          "FOREIGN KEY (id_sparepart) REFERENCES tb_sparepart(id_sparepart));");
+    
+    
+            stmt.execute("INSERT OR IGNORE INTO tb_jasa (id_jasa, nama_jasa, tarif_jasa) " +
+                         "VALUES (999, 'Jasa Manual / Lain-lain', 0);");
         }
     }
+    
 }

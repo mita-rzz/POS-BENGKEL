@@ -1,14 +1,17 @@
 package controller;
 
+import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+
 import dao.JasaDAO;
 import dao.SparepartDAO;
 import dao.TransaksiDAO;
-import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import model.DetJasa;
 import model.DetSparepart;
 import model.Jasa;
@@ -23,8 +26,8 @@ public class TransaksiController {
     // ==========================================
     private TransaksiView view;
     private TransaksiDAO transaksiDao;
-    private JasaDAO jasaDao;             // Pastikan class ini sudah kamu buat
-    private SparepartDAO sparepartDao;   // Pastikan class ini sudah kamu buat
+    private JasaDAO jasaDao;             
+    private SparepartDAO sparepartDao;   
     
     private List<DetJasa> keranjangJasa;
     private List<DetSparepart> keranjangSparepart;
@@ -37,8 +40,8 @@ public class TransaksiController {
         
         // Inisialisasi DAO
         this.transaksiDao = new TransaksiDAO();
-        this.jasaDao = new JasaDAO();           // Buka komentar jika JasaDAO sudah siap
-        this.sparepartDao = new SparepartDAO(); // Buka komentar jika SparepartDAO sudah siap
+        this.jasaDao = new JasaDAO();           
+        this.sparepartDao = new SparepartDAO(); 
         
         // Inisialisasi List Keranjang
         this.keranjangJasa = new ArrayList<>();
@@ -48,43 +51,42 @@ public class TransaksiController {
     }
 
     // ==========================================
-    // 3. METHOD - METHOD
+    // 3. METHOD - METHOD INISIALISASI
     // ==========================================
     public void initController() {
-        // Mendaftarkan aksi tombol ke method masing-masing menggunakan listener dari View
+        // Mendaftarkan aksi tombol ke method masing-masing
         view.addTambahJasaListener(e -> tambahJasaDbKeKeranjang());
         view.addTambahSparepartListener(e -> tambahSparepartKeKeranjang());
         view.addSelesaikanTransaksiListener(e -> prosesSelesaikanTransaksi());
 
-        // Listener untuk fitur Auto-suggest pencarian Jasa
+        // Listener Real-time untuk menghitung uang kembalian saat kasir mengetik
+        view.addJumlahBayarListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { hitungKembalian(); }
+            public void removeUpdate(DocumentEvent e) { hitungKembalian(); }
+            public void changedUpdate(DocumentEvent e) { hitungKembalian(); }
+        });
+
+        // Listener untuk Auto-suggest Jasa
         view.addKetikJasaListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { updateSaranJasa(); }
             public void removeUpdate(DocumentEvent e) { updateSaranJasa(); }
             public void changedUpdate(DocumentEvent e) { updateSaranJasa(); }
             private void updateSaranJasa() {
                 String keyword = view.getSearchJasa();
-                
-                // 1. Kalau inputan kosong, tutup popup
                 if (keyword.isEmpty()) {
                     view.tampilkanSaranJasa(new ArrayList<>());
                     return;
                 }
-
-                // 2. Minta data ke database (sekarang method cariJasa sudah jalan!)
                 List<Jasa> hasilDB = cariJasa(keyword);
-                
-                // 3. Ubah format datanya jadi teks biar gampang dibaca kasir
                 List<String> listSaran = new ArrayList<>();
                 for (Jasa j : hasilDB) {
                     listSaran.add(j.getNamaJasa() + " - Rp " + j.getTarifJasa());
                 }
-                
-                // 4. Munculkan di layar!
                 view.tampilkanSaranJasa(listSaran);
             }
         });
 
-        // Listener untuk fitur Auto-suggest pencarian Sparepart
+        // Listener untuk Auto-suggest Sparepart
         view.addKetikSparepartListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { updateSaranSparepart(); }
             public void removeUpdate(DocumentEvent e) { updateSaranSparepart(); }
@@ -92,20 +94,15 @@ public class TransaksiController {
             
             private void updateSaranSparepart() {
                 String keyword = view.getSearchSparepart();        
-                // 1. Kalau inputan kosong, suruh View mengosongkan/menutup popup
                 if (keyword.isEmpty()) {
                     view.tampilkanSaranSparepart(new ArrayList<>());
                     return;
                 }
-                // 2. Minta data ke database via DAO
                 List<Sparepart> hasilPencarian = cariSparepart(keyword);
-                // 3. Ubah objek Sparepart menjadi tulisan (String) agar mudah dibaca di layar
                 List<String> saranTeks = new ArrayList<>();
                 for (Sparepart sp : hasilPencarian) {
-                    // Ini akan memunculkan teks seperti: "Busi NGK (Stok: 10) - Rp 25000"
                     saranTeks.add(sp.getNamaSparepart() + " - Rp " + sp.getHargaJual());
                 }
-                // 4. Suruh View menampilkan daftar tulisan tersebut!
                 view.tampilkanSaranSparepart(saranTeks);
             }
         });
@@ -113,8 +110,10 @@ public class TransaksiController {
         refreshTabelKeranjang();
     }
 
+    // ==========================================
+    // 4. METHOD PENCARIAN & TAMBAH KERANJANG
+    // ==========================================
     public List<Jasa> cariJasa(String keyword) {
-        // Return jasaDao.cariJasa(keyword);
         return jasaDao.cariJasaInput(keyword);
     }
 
@@ -125,17 +124,13 @@ public class TransaksiController {
     public void tambahJasaDbKeKeranjang() {
         String teksPilihan = view.getSearchJasa(); 
         
-        // 1. Validasi input
-        if (teksPilihan.trim().isEmpty() || teksPilihan.equals("-- Ketik Jasa --")) {
+        if (teksPilihan.trim().isEmpty() || teksPilihan.equals("Ketik nama jasa...")) {
             view.tampilkanPesan("Pilih jasa terlebih dahulu dari daftar!");
             return;
         }
 
         try {
-            // 2. Potong teksnya untuk mengambil NAMA JASA-nya saja
             String namaJasaAsli = teksPilihan.split(" - Rp ")[0];
-
-            // 3. Cari jasa tersebut di database untuk mendapatkan ID dan Tarif aslinya
             List<Jasa> hasilPencarian = cariJasa(namaJasaAsli);
             
             if (hasilPencarian.isEmpty()) {
@@ -143,27 +138,21 @@ public class TransaksiController {
                 return;
             }
 
-            // Ambil data jasa urutan pertama dari hasil pencarian
             Jasa jasaTerpilih = hasilPencarian.get(0); 
 
-            // 4. Masukkan ke dalam objek DetJasa
             DetJasa dj = new DetJasa();
-            dj.setIdJasa(jasaTerpilih.getIdJasa());       // Mengambil ID asli dari DB
-            dj.setNamaJasa(jasaTerpilih.getNamaJasa());     // Mengambil nama mekanik dari input View
-            dj.setTarifJasa(jasaTerpilih.getTarifJasa()); // Mengambil tarif asli dari DB
-            dj.setSubTotal(jasaTerpilih.getTarifJasa());  // Subtotal sama dengan tarif (qty = 1)
+            dj.setIdJasa(jasaTerpilih.getIdJasa());       
+            dj.setNamaJasa(jasaTerpilih.getNamaJasa());     
+            dj.setTarifJasa(jasaTerpilih.getTarifJasa()); 
+            dj.setSubTotal(jasaTerpilih.getTarifJasa());  
+            dj.setNamaMekanik(view.getNamaMekanik()); // Menambahkan mekanik sesuai perubahan DAO
             
-            // 5. Tambahkan ke keranjang dan update tabel
             keranjangJasa.add(dj);
-            view.tampilkanPesan("Jasa " + jasaTerpilih.getNamaJasa() + " berhasil ditambahkan!");
             
-            // (Opsional) Kosongkan kembali kotak pencarian jasa di view
-            view.bersihkanInputJasa();
-            
+            view.bersihkanSemuaInput(); // Kosongkan input agar rapi
             refreshTabelKeranjang();
 
         } catch (Exception e) {
-            // Tangkap error kalau format teksnya aneh/tidak sesuai
             view.tampilkanPesan("Pastikan Anda memilih jasa dari pilihan yang muncul di bawahnya!");
         }
     }
@@ -172,17 +161,13 @@ public class TransaksiController {
         String teksPilihan = view.getSearchSparepart();
         int qtyTambahan = view.getKuantitas();
 
-        // 1. Validasi input dasar
-        if (teksPilihan.trim().isEmpty() || teksPilihan.equals("-- Ketik Sparepart --") || qtyTambahan <= 0) {
+        if (teksPilihan.trim().isEmpty() || teksPilihan.equals("Ketik nama sparepart...") || qtyTambahan <= 0) {
             view.tampilkanPesan("Pilih sparepart dan masukkan kuantitas yang valid (minimal 1)!");
             return;
         }
 
         try {
-            // 2. Potong teksnya untuk mengambil NAMA ASLI sparepart
             String namaAsli = teksPilihan.split(" - Rp ")[0];
-
-            // 3. Cari sparepart di database
             List<Sparepart> hasilPencarian = cariSparepart(namaAsli);
             
             if (hasilPencarian.isEmpty()) {
@@ -191,41 +176,28 @@ public class TransaksiController {
             }
 
             Sparepart spTerpilih = hasilPencarian.get(0); 
-
-            // ==================================================
-            // 4. LOGIKA PENGECEKAN BARANG YANG SAMA DI KERANJANG
-            // ==================================================
             boolean barangSudahAda = false;
 
             for (DetSparepart itemKeranjang : keranjangSparepart) {
-                // Cek apakah ID sparepart yang mau ditambahkan sama dengan yang ada di keranjang
                 if (itemKeranjang.getIdSparepart() == spTerpilih.getIdSparepart()) {
-                    
                     int totalQtyBaru = itemKeranjang.getJumlah() + qtyTambahan;
 
-                    // Validasi Stok Gabungan
                     if (totalQtyBaru > spTerpilih.getStok()) {
-                        view.tampilkanPesan("Gagal! Total pesanan melebihi stok. Stok " + spTerpilih.getNamaSparepart() + " tersisa: " + spTerpilih.getStok());
+                        view.tampilkanPesan("Gagal! Stok " + spTerpilih.getNamaSparepart() + " tersisa: " + spTerpilih.getStok());
                         return;
                     }
 
-                    // Update jumlah dan subtotal item yang sudah ada
                     itemKeranjang.setJumlah(totalQtyBaru);
                     itemKeranjang.setSubTotal(itemKeranjang.getHargaJual() * totalQtyBaru);
                     
                     barangSudahAda = true;
-                    view.tampilkanPesan("Kuantitas " + spTerpilih.getNamaSparepart() + " berhasil diupdate menjadi " + totalQtyBaru + "x!");
-                    break; // Hentikan perulangan karena barang sudah ketemu
+                    break;
                 }
             }
 
-            // ==================================================
-            // 5. JIKA BARANG BELUM ADA DI KERANJANG (BARIS BARU)
-            // ==================================================
             if (!barangSudahAda) {
-                // Validasi stok untuk barang baru
                 if (qtyTambahan > spTerpilih.getStok()) {
-                    view.tampilkanPesan("Gagal! Stok tidak mencukupi. Stok " + spTerpilih.getNamaSparepart() + " tersisa: " + spTerpilih.getStok());
+                    view.tampilkanPesan("Gagal! Stok " + spTerpilih.getNamaSparepart() + " tersisa: " + spTerpilih.getStok());
                     return;
                 }
 
@@ -236,80 +208,93 @@ public class TransaksiController {
                 ds.setSubTotal(spTerpilih.getHargaJual() * qtyTambahan);
                 
                 keranjangSparepart.add(ds);
-                view.tampilkanPesan(qtyTambahan + "x " + spTerpilih.getNamaSparepart() + " berhasil ditambahkan ke keranjang!");
             }
             
-            // 6. Bersihkan inputan dan refresh tabel UI
-            view.bersihkanInputSparepart();
+            view.bersihkanSemuaInput();
             refreshTabelKeranjang();
 
         } catch (Exception e) {
-            view.tampilkanPesan("Pastikan Anda memilih sparepart dari daftar pilihan (Auto-suggest) yang muncul!");
+            view.tampilkanPesan("Pastikan Anda memilih sparepart dari daftar pilihan yang muncul!");
         }
     }
 
     public void hapusItemByKode(String kodeHapus) {
-        // kodeHapus formatnya dari View adalah "JASA_0" atau "SPAREPART_1"
         String[] part = kodeHapus.split("_");
         String tipe = part[0];
         int index = Integer.parseInt(part[1]);
 
         if (tipe.equals("JASA")) {
-            if (index >= 0 && index < keranjangJasa.size()) {
-                keranjangJasa.remove(index);
-            }
+            if (index >= 0 && index < keranjangJasa.size()) keranjangJasa.remove(index);
         } else if (tipe.equals("SPAREPART")) {
-            if (index >= 0 && index < keranjangSparepart.size()) {
-                keranjangSparepart.remove(index);
-            }
+            if (index >= 0 && index < keranjangSparepart.size()) keranjangSparepart.remove(index);
         }
         
-        // Refresh layarnya setelah dihapus
         refreshTabelKeranjang();
     }
 
-    public void hitungTotalBiaya() {
-        double total = 0;
-        for (DetJasa j : keranjangJasa) {
-            total += j.getSubTotal();
-        }
-        for (DetSparepart s : keranjangSparepart) {
-            total += s.getSubTotal();
-        }
+    // ==========================================
+    // 5. METHOD PERHITUNGAN BIAYA & KEMBALIAN
+    // ==========================================
+    public int hitungTotalBiaya() {
+        int total = 0;
+        for (DetJasa j : keranjangJasa) total += j.getSubTotal();
+        for (DetSparepart s : keranjangSparepart) total += s.getSubTotal();
+        
         view.setTotalBiaya(total);
+        return total;
     }   
 
+    public void hitungKembalian() {
+        int totalBiaya = hitungTotalBiaya();
+        int jumlahBayar = view.getJumlahBayar();
+        
+        // Kembalian = Uang Bayar - Total Biaya
+        int kembalian = jumlahBayar - totalBiaya;
+        view.setKembalian(kembalian);
+    }
+
+    // ==========================================
+    // 6. METHOD PENYELESAIAN TRANSAKSI & STRUK
+    // ==========================================
     public void prosesSelesaikanTransaksi() {
         if (keranjangJasa.isEmpty() && keranjangSparepart.isEmpty()) {
-            view.tampilkanPesan("Keranjang masih kosong!");
+            view.tampilkanPesan("Gagal! Keranjang masih kosong.");
             return;
         }
 
-        if (view.getNamaPelanggan().isEmpty() || view.getPlatNomor().isEmpty()) {
-            view.tampilkanPesan("Nama pelanggan dan nomor kendaraan wajib diisi!");
+        if (view.getNamaPelanggan().isEmpty() || view.getPlatNomor().isEmpty() || view.getNamaMekanik().isEmpty()) {
+            view.tampilkanPesan("Gagal! Nama Pelanggan, Plat Nomor, dan Nama Mekanik wajib diisi.");
+            return;
+        }
+
+        int totalAkhir = hitungTotalBiaya();
+        int jumlahBayar = view.getJumlahBayar();
+
+        // VALIDASI PEMBAYARAN KURANG
+        if (jumlahBayar < totalAkhir) {
+            view.tampilkanPesan("Gagal! Jumlah bayar tidak mencukupi.\nKurang: Rp " + String.format("%,d", (totalAkhir - jumlahBayar)));
             return;
         }
 
         try {
-            // 1. Setup Data Transaksi Utama
+            // 1. Setup Data Transaksi Utama sesuai DAO baru
             Transaksi t = new Transaksi();
             t.setIdUser(1); // Hardcode sementara, atau ambil dari sesi login
             t.setNamaPelanggan(view.getNamaPelanggan());
             t.setNomorKendaraan(view.getPlatNomor());
             t.setWaktuTransaksi(LocalDateTime.now());
-            t.setStatusPembayaran("Lunas");
             
-            int totalAkhir = 0;
-            for (DetJasa j : keranjangJasa) totalAkhir += j.getSubTotal();
-            for (DetSparepart s : keranjangSparepart) totalAkhir += s.getSubTotal();
-            t.setTotalBayar(totalAkhir);
+            // Atribut pembayaran baru
+            t.setTotalBiaya(totalAkhir);               
+            t.setJumlahBayar(jumlahBayar);             
+            t.setMetodePembayaran(view.getMetodePembayaran()); // Diperlukan oleh DAO psTrans.setString(7, ...)
 
-            // 2. Simpan via DAO
+            // 2. Simpan via DAO (Pastikan parameter ini sesuai dengan deklarasi di TransaksiDAO)
             transaksiDao.simpanTransaksiUtama(t, keranjangJasa, keranjangSparepart);
             
             // 3. Sukses
             view.tampilkanPesan("Transaksi Berhasil Disimpan!");
-            tampilkanStruk(t);
+            tampilkanStruk(t, jumlahBayar, (jumlahBayar - totalAkhir)); // Kirim data uang bayar & kembalian ke struk
             bersihkanForm();
             
         } catch (SQLException ex) {
@@ -318,29 +303,37 @@ public class TransaksiController {
         }
     }
 
-    public void tampilkanStruk(Transaksi transaksi) {
+    public void tampilkanStruk(Transaksi transaksi, int uangBayar, int kembalian) {
         StringBuilder struk = new StringBuilder();
+        DateTimeFormatter formatWaktu = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+        
         struk.append("====================================\n");
         struk.append("           BENGKEL MANTAP         \n");
         struk.append("====================================\n");
+        struk.append("Waktu     : ").append(transaksi.getWaktuTransaksi().format(formatWaktu)).append("\n");
         struk.append("Pelanggan : ").append(transaksi.getNamaPelanggan()).append("\n");
         struk.append("Kendaraan : ").append(transaksi.getNomorKendaraan()).append("\n");
-        struk.append("Waktu     : ").append(transaksi.getWaktuTransaksi()).append("\n");
+        struk.append("Mekanik   : ").append(view.getNamaMekanik()).append("\n");
         struk.append("------------------------------------\n");
-        struk.append("Item:\n");
         
         for (DetJasa j : keranjangJasa) {
-            struk.append("- Jasa Mekanik: ").append(j.getNamaJasa())
-                 .append(" | Rp ").append(j.getSubTotal()).append("\n");
+            struk.append(j.getNamaJasa()).append("\n");
+            struk.append("   1 x Rp ").append(j.getTarifJasa())
+                 .append(" = Rp ").append(j.getSubTotal()).append("\n");
         }
         for (DetSparepart s : keranjangSparepart) {
-            struk.append("- Sparepart (ID:").append(s.getIdSparepart()).append(") x").append(s.getJumlah())
-                 .append(" | Rp ").append(s.getSubTotal()).append("\n");
+            struk.append("Sparepart ID: ").append(s.getIdSparepart()).append("\n");
+            struk.append("   ").append(s.getJumlah()).append(" x Rp ").append(s.getHargaJual())
+                 .append(" = Rp ").append(s.getSubTotal()).append("\n");
         }
         
         struk.append("------------------------------------\n");
-        struk.append("TOTAL BAYAR : Rp ").append(transaksi.getTotalBayar()).append("\n");
+        struk.append("TOTAL BIAYA  : Rp ").append(String.format("%,d", transaksi.getTotalBiaya())).append("\n");
+        struk.append("METODE       : ").append(transaksi.getMetodePembayaran()).append("\n");
+        struk.append("UANG BAYAR   : Rp ").append(String.format("%,d", uangBayar)).append("\n");
+        struk.append("KEMBALIAN    : Rp ").append(String.format("%,d", kembalian)).append("\n");
         struk.append("====================================\n");
+        struk.append("    Terima Kasih Atas Kunjungan Anda   \n");
 
         view.tampilkanStruk(struk.toString());
     }
@@ -350,16 +343,19 @@ public class TransaksiController {
         keranjangJasa.clear();
         keranjangSparepart.clear();
         refreshTabelKeranjang();
+        
+        // Kembalikan kotak pembayaran ke angka 0
+        view.setTotalBiaya(0);
+        view.setKembalian(0);
     }
     
     // ==========================================
-    // METHOD TAMBAHAN (HELPER)
+    // 7. METHOD HELPER TABEL
     // ==========================================
     private void refreshTabelKeranjang() {
         List<Object[]> dataJasa = new ArrayList<>();
         List<Object[]> dataSparepart = new ArrayList<>();
 
-        // 1. Siapkan data Jasa
         for (DetJasa j : keranjangJasa) {
             dataJasa.add(new Object[]{
                 j.getNamaJasa() != null ? j.getNamaJasa() : "Jasa Tidak Bernama",
@@ -369,7 +365,6 @@ public class TransaksiController {
             });
         }
 
-        // 2. Siapkan data Sparepart
         for (DetSparepart s : keranjangSparepart) {
             dataSparepart.add(new Object[]{
                 "Sparepart ID: " + s.getIdSparepart(), 
@@ -379,12 +374,11 @@ public class TransaksiController {
             });
         }
 
-        // 3. Kirim data ke View beserta logika Consumer untuk tombol hapusnya
         view.renderDaftarKeranjang(dataJasa, dataSparepart, kodeHapus -> {
             hapusItemByKode(kodeHapus);
         });
 
-        // 4. Update total biaya di layar
-        hitungTotalBiaya(); 
+        // Trigger perhitungan biaya dan kembalian setiap kali tabel diperbarui
+        hitungKembalian(); 
     }
 }
