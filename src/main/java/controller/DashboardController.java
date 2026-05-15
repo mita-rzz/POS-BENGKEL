@@ -61,7 +61,7 @@ public class DashboardController {
         showMenuTransaksi();
     }
 
-    // ==========================================
+    // ==========================================a
     // 3. METHOD initController()
     // ==========================================
     public void initController() {
@@ -105,6 +105,14 @@ public class DashboardController {
     public void showMenuAturSparepart() {
         System.out.println("Menampilkan Menu Atur Sparepart...");
         view.setTombolAktif(view.getBtnMenuSparepart());
+        
+        // ==========================================
+        // TAMBAHKAN BARIS INI:
+        // Paksa SparepartController untuk mengambil ulang 
+        // data terbaru dari database setiap kali menunya diklik.
+        // ==========================================
+        sparepartCtrl.muatKatalog(); 
+        
         view.tampilkanViewDiMainContent(sparepartView);
     }
 

@@ -98,8 +98,7 @@ public class DatabaseConnection {
                          "FOREIGN KEY (id_sparepart) REFERENCES tb_sparepart(id_sparepart));");
     
     
-            stmt.execute("INSERT OR IGNORE INTO tb_jasa (id_jasa, nama_jasa, tarif_jasa) " +
-                         "VALUES (999, 'Jasa Manual / Lain-lain', 0);");
+        
         }
     }
     

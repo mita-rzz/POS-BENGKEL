@@ -398,6 +398,8 @@ public class SparepartView extends JPanel {
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return btn;
     }
+    // Method ini wajib ada di SparepartController.java
+
 
     // ==========================================
     // 5. FUNCTIONAL METHODS & LISTENERS (Controller Ready)

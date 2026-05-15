@@ -1,15 +1,17 @@
 package controller;
 
-import dao.RestockDAO;
-import dao.SparepartDAO;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+
+import dao.RestockDAO;
+import dao.SparepartDAO;
 import model.DetRestock;
 import model.Restock;
 import model.Sparepart;
@@ -45,40 +47,54 @@ public class RestockController {
             @Override
             public void changedUpdate(DocumentEvent e) { triggerSearch(); }
 
-            private void triggerSearch() {
-                SwingUtilities.invokeLater(() -> {
-                    // Gunakan .trim() untuk membuang spasi liar di ujung teks
-                    String keyword = view.getSearchSparepart().trim();
-                    
-                    if (keyword.isEmpty()) {
-                        view.tampilkanSaranSparepart(new ArrayList<>());
-                        sparepartTerpilih = null;
-                        return;
-                    }
+           private void triggerSearch() {
+    SwingUtilities.invokeLater(() -> {
+        String keyword = view.getSearchSparepart().trim();
+        
+        if (keyword.isEmpty()) {
+            view.tampilkanSaranSparepart(new ArrayList<>());
+            sparepartTerpilih = null;
+            return;
+        }
 
-                    List<Sparepart> hasilCari = cariSparepart(keyword);
-                    List<String> namaSaran = new ArrayList<>();
+        List<Sparepart> hasilCari = cariSparepart(keyword);
+        List<String> namaSaran = new ArrayList<>();
 
-                    // Reset dulu setiap ada ketikan baru
-                    sparepartTerpilih = null; 
+        // Reset dulu setiap ada ketikan baru
+        sparepartTerpilih = null; 
 
-                    for (Sparepart sp : hasilCari) {
-                        namaSaran.add(sp.getNamaSparepart());
-                        
-                        // CEK: Jika teks di kolom SEARCH sama persis dengan nama di database
-                        if (sp.getNamaSparepart().equalsIgnoreCase(keyword)) {
-                            sparepartTerpilih = sp; // BERHASIL DIKUNCI
-                        }
-                    }
+        // ==========================================
+        // TAMBAHAN 1: CCTV UNTUK MELACAK ERROR
+        // ==========================================
+        System.out.println("\n--- PROSES PENCARIAN ---");
+        System.out.println("Yang diketik di form : '" + keyword + "'");
 
-                    view.tampilkanSaranSparepart(namaSaran);
-                    
-                    // DEBUG: Cek di console apakah objeknya sudah tertangkap atau belum
-                    if(sparepartTerpilih != null) {
-                        System.out.println("Sparepart Terdeteksi: " + sparepartTerpilih.getNamaSparepart());
-                    }
-                });
+        for (Sparepart sp : hasilCari) {
+            // ==========================================
+            // TAMBAHAN 2: .trim() UNTUK DATA DARI DATABASE
+            // ==========================================
+            String namaDariDB = sp.getNamaSparepart().trim(); 
+            namaSaran.add(namaDariDB);
+            
+            System.out.println("Mencocokkan dengan DB: '" + namaDariDB + "'");
+            
+            // CEK: Jika teks sama persis
+            if (namaDariDB.equalsIgnoreCase(keyword)) {
+                sparepartTerpilih = sp; // BERHASIL DIKUNCI
+                System.out.println(">>> BERHASIL! Sparepart dikunci: " + sparepartTerpilih.getNamaSparepart());
             }
+        }
+
+        view.tampilkanSaranSparepart(namaSaran);
+        
+        // ==========================================
+        // TAMBAHAN 3: INFO JIKA GAGAL
+        // ==========================================
+        if(sparepartTerpilih == null) {
+            System.out.println(">>> GAGAL: Objek belum terkunci (Masih NULL)!");
+        }
+    });
+}
         });
 
         view.addUpdateStokListener(e -> prosesUpdateStok());
@@ -96,6 +112,9 @@ public class RestockController {
     // 5. METHOD PROSES UPDATE STOK
     // ==========================================
     public void prosesUpdateStok() {
+        System.out.println("--- TOMBOL UPDATE DITEKAN ---");
+        System.out.println("Teks di kolom pencarian saat ini: '" + view.getSearchSparepart() + "'");
+        System.out.println("Objek sparepartTerpilih: " + (sparepartTerpilih != null ? sparepartTerpilih.getNamaSparepart() : "MASIH NULL!"));
         // 1. Ambil data dari View
         int jumlahMasuk = view.getJumlahMasuk();
         Date tanggalDate = view.getTanggalMasuk();
@@ -104,7 +123,7 @@ public class RestockController {
         // 2. Validasi Input
         System.out.println(sparepartTerpilih);
         if (sparepartTerpilih == null) {
-            // view.tampilkanPesan("Gagal: Pastikan Anda memilih sparepart yang valid dari saran yang muncul!");
+            view.tampilkanPesan("Gagal: Pastikan Anda memilih sparepart yang valid dari saran yang muncul!");
             return;
         }
         if (jumlahMasuk <= 0) {

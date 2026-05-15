@@ -402,6 +402,12 @@ public class RestockView extends JPanel {
     }
 
     public void addUpdateStokListener(ActionListener listener) {
+        // 1. Hapus semua aksi (listener) yang menumpuk dari klik menu sebelumnya
+        for (ActionListener al : btnUpdateStok.getActionListeners()) {
+            btnUpdateStok.removeActionListener(al);
+        }
+        
+        // 2. Tambahkan aksi yang baru (sekarang tombol ini 100% hanya punya 1 aksi)
         btnUpdateStok.addActionListener(listener);
     }
     

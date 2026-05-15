@@ -32,6 +32,7 @@ public class SparepartController {
         this.halamanSaatIni = 1;
         this.batasPerHalaman = 10; // Sesuai dengan batasan paging
         this.sparepartTerpilih = null; // Default kosong saat baru dibuka
+        
     }
 
     // ==========================================

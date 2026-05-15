@@ -85,7 +85,7 @@ public class DashboardView extends JPanel {
         pnlKanan.setBackground(COLOR_BG_NAVBAR);
         pnlKanan.setBorder(new EmptyBorder(5, 0, 0, 0)); // Menyelaraskan tinggi dengan teks menu
 
-        JLabel lblAdmin = new JLabel("Administrator");
+        JLabel lblAdmin = new JLabel("");
         lblAdmin.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         lblAdmin.setForeground(COLOR_TEXT_NORMAL);
         
